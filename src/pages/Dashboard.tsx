@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookingModal } from '@/components/BookingModal';
+import { MessagingSystem } from '@/components/MessagingSystem';
+import { MaterialLibrary } from '@/components/MaterialLibrary';
+import { MaterialUpload } from '@/components/MaterialUpload';
+import { AdminDashboard } from '@/components/AdminDashboard';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { 
@@ -17,7 +22,12 @@ import {
   BookOpen, 
   Search,
   Filter,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  Upload,
+  Settings,
+  MapPin,
+  CheckCircle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -29,6 +39,8 @@ interface Tutor {
   hourly_rate: number;
   subjects: string[];
   experience_years: number;
+  location?: string;
+  is_verified: boolean;
   profile_image_url?: string;
   average_rating?: number;
   review_count?: number;
@@ -56,8 +68,17 @@ export const Dashboard = () => {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
+  const [selectedMessageUserId, setSelectedMessageUserId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [rateFilter, setRateFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const subjects = [
+    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English',
+    'History', 'Geography', 'Computer Science', 'Economics', 'Art'
+  ];
 
   useEffect(() => {
     if (user && profile) {
@@ -122,10 +143,22 @@ export const Dashboard = () => {
     setBookings(data || []);
   };
 
-  const filteredTutors = tutors.filter(tutor =>
-    `${tutor.first_name} ${tutor.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tutor.subjects?.some(subject => subject.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredTutors = tutors.filter(tutor => {
+    const matchesSearch = `${tutor.first_name} ${tutor.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         tutor.subjects?.some(subject => subject.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesSubject = !selectedSubject || tutor.subjects?.includes(selectedSubject);
+    
+    const matchesRate = !rateFilter || 
+                       (rateFilter === 'low' && tutor.hourly_rate <= 30) ||
+                       (rateFilter === 'medium' && tutor.hourly_rate > 30 && tutor.hourly_rate <= 60) ||
+                       (rateFilter === 'high' && tutor.hourly_rate > 60);
+    
+    const matchesLocation = !locationFilter || 
+                           tutor.location?.toLowerCase().includes(locationFilter.toLowerCase());
+
+    return matchesSearch && matchesSubject && matchesRate && matchesLocation;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -135,6 +168,10 @@ export const Dashboard = () => {
       case 'cancelled': return 'bg-destructive text-destructive-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
+  };
+
+  const startConversation = (userId: string) => {
+    setSelectedMessageUserId(userId);
   };
 
   if (loading) {
@@ -158,7 +195,7 @@ export const Dashboard = () => {
               <BookOpen className="h-5 w-5 text-education-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">TutorConnect</h1>
+              <h1 className="text-xl font-bold">OutLook Tutoring</h1>
               <p className="text-sm text-muted-foreground">
                 Welcome back, {profile?.first_name}!
               </p>
@@ -167,6 +204,9 @@ export const Dashboard = () => {
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="capitalize">
               {profile?.user_type}
+              {profile?.is_verified && profile?.user_type === 'tutor' && (
+                <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+              )}
             </Badge>
             <Button variant="outline" onClick={signOut}>
               Sign Out
@@ -177,7 +217,7 @@ export const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue={profile?.user_type === 'tutor' ? 'my-bookings' : 'find-tutors'} className="space-y-6">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
             {profile?.user_type === 'student' && (
               <TabsTrigger value="find-tutors" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
@@ -186,24 +226,100 @@ export const Dashboard = () => {
             )}
             <TabsTrigger value="my-bookings" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              My Bookings
+              Bookings
             </TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Messages
+            </TabsTrigger>
+            <TabsTrigger value="materials" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Materials
+            </TabsTrigger>
+            {profile?.user_type === 'tutor' && (
+              <TabsTrigger value="upload" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload
+              </TabsTrigger>
+            )}
+            {profile?.user_type === 'admin' && (
+              <TabsTrigger value="admin" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Admin
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          {/* Find Tutors Tab */}
+          {/* Find Tutors Tab - Enhanced Search */}
           {profile?.user_type === 'student' && (
             <TabsContent value="find-tutors" className="space-y-6">
-              <div className="flex gap-4 items-center">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search tutors by name or subject..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+              {/* Enhanced Search Filters */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Search & Filter Tutors
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by name or subject..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    
+                    <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">All subjects</SelectItem>
+                        {subjects.map((subject) => (
+                          <SelectItem key={subject} value={subject}>
+                            {subject}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={rateFilter} onValueChange={setRateFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Hourly rate" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Any rate</SelectItem>
+                        <SelectItem value="low">$0-30/hr</SelectItem>
+                        <SelectItem value="medium">$30-60/hr</SelectItem>
+                        <SelectItem value="high">$60+/hr</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Input
+                      placeholder="Location"
+                      value={locationFilter}
+                      onChange={(e) => setLocationFilter(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedSubject('');
+                      setRateFilter('');
+                      setLocationFilter('');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </CardContent>
+              </Card>
 
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredTutors.map((tutor) => (
@@ -211,8 +327,11 @@ export const Dashboard = () => {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg">
+                          <CardTitle className="text-lg flex items-center gap-2">
                             {tutor.first_name} {tutor.last_name}
+                            {tutor.is_verified && (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            )}
                           </CardTitle>
                           <div className="flex items-center gap-2 mt-1">
                             <div className="flex items-center gap-1">
@@ -225,6 +344,12 @@ export const Dashboard = () => {
                               </span>
                             </div>
                           </div>
+                          {tutor.location && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">{tutor.location}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-primary">
@@ -262,12 +387,20 @@ export const Dashboard = () => {
                         </div>
                       </div>
 
-                      <Button 
-                        className="w-full" 
-                        onClick={() => setSelectedTutor(tutor)}
-                      >
-                        Book Session
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          onClick={() => setSelectedTutor(tutor)}
+                        >
+                          Book Session
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => startConversation(tutor.user_id)}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          Message
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -344,6 +477,38 @@ export const Dashboard = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* Messages Tab */}
+          <TabsContent value="messages">
+            <MessagingSystem 
+              selectedUserId={selectedMessageUserId}
+              onClose={() => setSelectedMessageUserId(undefined)}
+            />
+          </TabsContent>
+
+          {/* Materials Tab */}
+          <TabsContent value="materials">
+            <MaterialLibrary />
+          </TabsContent>
+
+          {/* Material Upload Tab (Tutors only) */}
+          {profile?.user_type === 'tutor' && (
+            <TabsContent value="upload">
+              <MaterialUpload onUploadSuccess={() => {
+                toast({
+                  title: "Material uploaded",
+                  description: "Your material has been uploaded successfully and is pending approval"
+                });
+              }} />
+            </TabsContent>
+          )}
+
+          {/* Admin Dashboard */}
+          {profile?.user_type === 'admin' && (
+            <TabsContent value="admin">
+              <AdminDashboard />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 

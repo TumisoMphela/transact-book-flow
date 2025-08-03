@@ -109,6 +109,62 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          participant_1: string
+          participant_2: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant_1: string
+          participant_2: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant_1?: string
+          participant_2?: string
+        }
+        Relationships: []
+      }
+      material_purchases: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          id: string
+          material_id: string
+          student_id: string
+        }
+        Insert: {
+          amount_paid: number
+          created_at?: string
+          id?: string
+          material_id: string
+          student_id: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          id?: string
+          material_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_purchases_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           created_at: string
@@ -168,6 +224,7 @@ export type Database = {
       messages: {
         Row: {
           content: string
+          conversation_id: string | null
           created_at: string
           id: string
           is_read: boolean
@@ -177,6 +234,7 @@ export type Database = {
         }
         Insert: {
           content: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
@@ -186,6 +244,7 @@ export type Database = {
         }
         Update: {
           content?: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
@@ -193,7 +252,15 @@ export type Database = {
           sender_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_sessions: {
         Row: {
@@ -242,7 +309,9 @@ export type Database = {
           first_name: string | null
           hourly_rate: number | null
           id: string
+          is_verified: boolean | null
           last_name: string | null
+          location: string | null
           phone: string | null
           profile_image_url: string | null
           subjects: string[] | null
@@ -258,7 +327,9 @@ export type Database = {
           first_name?: string | null
           hourly_rate?: number | null
           id?: string
+          is_verified?: boolean | null
           last_name?: string | null
+          location?: string | null
           phone?: string | null
           profile_image_url?: string | null
           subjects?: string[] | null
@@ -274,7 +345,9 @@ export type Database = {
           first_name?: string | null
           hourly_rate?: number | null
           id?: string
+          is_verified?: boolean | null
           last_name?: string | null
+          location?: string | null
           phone?: string | null
           profile_image_url?: string | null
           subjects?: string[] | null
