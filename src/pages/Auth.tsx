@@ -6,11 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { GraduationCap, UserCheck } from 'lucide-react';
+import { GraduationCap, UserCheck, Mail, AlertCircle } from 'lucide-react';
 
 export const Auth = () => {
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -28,23 +32,32 @@ export const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
       if (error) throw error;
+
+      // Check if email is confirmed
+      if (data.user && !data.user.email_confirmed_at) {
+        setShowEmailVerification(true);
+        setPendingEmail(formData.email);
+        await supabase.auth.signOut(); // Sign out unconfirmed user
+        toast({
+          title: "Email Verification Required",
+          description: "Please verify your email address before signing in.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       toast({
         title: "Welcome back!",
         description: "Successfully signed in.",
       });
-    } catch (error) {
-      toast({
-        title: "Sign In Failed",
-        description: error.message,
-        variant: "destructive"
-      });
+    } catch (error: any) {
+      handleAuthError(error);
     } finally {
       setLoading(false);
     }
@@ -59,6 +72,7 @@ export const Auth = () => {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -69,19 +83,70 @@ export const Auth = () => {
 
       if (error) throw error;
 
+      setShowEmailVerification(true);
+      setPendingEmail(formData.email);
       toast({
         title: "Account Created!",
-        description: "Please check your email to verify your account.",
+        description: "Please check your email to verify your account before signing in.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      handleAuthError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!pendingEmail) return;
+    
+    setResendLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: pendingEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) throw error;
+
       toast({
-        title: "Sign Up Failed",
+        title: "Email Sent",
+        description: "Verification email has been resent. Please check your inbox.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Resend Email",
         description: error.message,
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setResendLoading(false);
     }
+  };
+
+  const handleAuthError = (error: any) => {
+    let title = "Authentication Failed";
+    let description = error.message;
+
+    if (error.message.includes("email not confirmed")) {
+      title = "Email Verification Required";
+      description = "Please verify your email address before signing in.";
+      setShowEmailVerification(true);
+    } else if (error.message.includes("Invalid login credentials")) {
+      title = "Invalid Credentials";
+      description = "Please check your email and password.";
+    } else if (error.message.includes("Email rate limit exceeded")) {
+      title = "Too Many Attempts";
+      description = "Please wait before trying again.";
+    }
+
+    toast({
+      title,
+      description,
+      variant: "destructive"
+    });
   };
 
   return (
@@ -95,6 +160,27 @@ export const Auth = () => {
           <p className="text-muted-foreground">Connect with expert tutors</p>
         </CardHeader>
         <CardContent>
+          {showEmailVerification && (
+            <Alert className="mb-4">
+              <Mail className="h-4 w-4" />
+              <AlertDescription className="flex flex-col gap-2">
+                <span>
+                  We've sent a verification email to <strong>{pendingEmail}</strong>. 
+                  Please check your inbox and click the verification link to activate your account.
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  className="self-start"
+                >
+                  {resendLoading ? 'Sending...' : 'Resend Email'}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
