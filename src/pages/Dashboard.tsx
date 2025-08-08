@@ -195,7 +195,7 @@ export const Dashboard = () => {
               <BookOpen className="h-5 w-5 text-education-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">OutLook Tutoring</h1>
+              <h1 className="text-xl font-bold">OUTLOOK Tutoring</h1>
               <p className="text-sm text-muted-foreground">
                 Welcome back, {profile?.first_name}!
               </p>
