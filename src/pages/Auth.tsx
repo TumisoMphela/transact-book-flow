@@ -153,12 +153,11 @@ export const Auth = () => {
     <div className="min-h-screen bg-gradient-secondary flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-elevated">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-4">
-            <GraduationCap className="h-8 w-8 text-teal-600" />
+          <div className="mx-auto w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center mb-4">
+            <GraduationCap className="h-6 w-6 text-education-foreground" />
           </div>
-          <CardTitle className="text-3xl font-bold text-gray-800">OUTLOOK</CardTitle>
-          <p className="text-lg text-gray-600 font-medium">Tutoring</p>
-          <p className="text-sm text-muted-foreground mt-2">Connect with expert tutors</p>
+          <CardTitle className="text-2xl">TutorConnect</CardTitle>
+          <p className="text-muted-foreground">Connect with expert tutors</p>
         </CardHeader>
         <CardContent>
           {showEmailVerification && (
