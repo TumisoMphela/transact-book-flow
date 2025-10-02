@@ -71,7 +71,7 @@ export const MaterialLibrary: React.FC = () => {
             profile_image_url
           )
         `)
-        .eq('approval_status', 'approved')
+        .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

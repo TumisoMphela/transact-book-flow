@@ -11,7 +11,6 @@ import { MessagingSystem } from '@/components/MessagingSystem';
 import { MaterialLibrary } from '@/components/MaterialLibrary';
 import { MaterialUpload } from '@/components/MaterialUpload';
 import { AdminDashboard } from '@/components/AdminDashboard';
-import { Profile } from '@/components/Profile';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { 
@@ -31,7 +30,6 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 
 interface Tutor {
   user_id: string;
@@ -87,39 +85,6 @@ export const Dashboard = () => {
       fetchData();
     }
   }, [user, profile]);
-
-  // Real-time updates for bookings
-  useRealtimeUpdates({
-    tableName: 'bookings',
-    filter: `student_id=eq.${user?.id},tutor_id=eq.${user?.id}`,
-    onInsert: (payload) => {
-      console.log('New booking:', payload);
-      fetchBookings(); // Refresh bookings when new booking is created
-    },
-    onUpdate: (payload) => {
-      console.log('Booking updated:', payload);
-      fetchBookings(); // Refresh bookings when booking is updated
-    }
-  });
-
-  // Real-time updates for messages
-  useRealtimeUpdates({
-    tableName: 'messages',
-    filter: `sender_id=eq.${user?.id},receiver_id=eq.${user?.id}`,
-    onInsert: (payload) => {
-      console.log('New message:', payload);
-      // Could show notification here
-    }
-  });
-
-  // Real-time updates for materials
-  useRealtimeUpdates({
-    tableName: 'materials',
-    onUpdate: (payload) => {
-      console.log('Material updated:', payload);
-      // Could refresh materials if needed
-    }
-  });
 
   const fetchData = async () => {
     try {
@@ -252,7 +217,7 @@ export const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue={profile?.user_type === 'tutor' ? 'my-bookings' : 'find-tutors'} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
             {profile?.user_type === 'student' && (
               <TabsTrigger value="find-tutors" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
@@ -277,10 +242,6 @@ export const Dashboard = () => {
                 Upload
               </TabsTrigger>
             )}
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
             {profile?.user_type === 'admin' && (
               <TabsTrigger value="admin" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
@@ -541,11 +502,6 @@ export const Dashboard = () => {
               }} />
             </TabsContent>
           )}
-
-          {/* Profile Tab */}
-          <TabsContent value="profile">
-            <Profile />
-          </TabsContent>
 
           {/* Admin Dashboard */}
           {profile?.user_type === 'admin' && (

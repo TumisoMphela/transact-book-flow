@@ -7,49 +7,13 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
+  // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
   }
   public: {
     Tables: {
-      admin_audit_log: {
-        Row: {
-          action: string
-          admin_id: string
-          created_at: string
-          id: string
-          new_data: Json | null
-          old_data: Json | null
-          reason: string | null
-          target_id: string | null
-          target_table: string | null
-        }
-        Insert: {
-          action: string
-          admin_id: string
-          created_at?: string
-          id?: string
-          new_data?: Json | null
-          old_data?: Json | null
-          reason?: string | null
-          target_id?: string | null
-          target_table?: string | null
-        }
-        Update: {
-          action?: string
-          admin_id?: string
-          created_at?: string
-          id?: string
-          new_data?: Json | null
-          old_data?: Json | null
-          reason?: string | null
-          target_id?: string | null
-          target_table?: string | null
-        }
-        Relationships: []
-      }
       availability: {
         Row: {
           created_at: string
@@ -169,35 +133,6 @@ export type Database = {
         }
         Relationships: []
       }
-      material_downloads: {
-        Row: {
-          downloaded_at: string
-          id: string
-          material_id: string
-          user_id: string
-        }
-        Insert: {
-          downloaded_at?: string
-          id?: string
-          material_id: string
-          user_id: string
-        }
-        Update: {
-          downloaded_at?: string
-          id?: string
-          material_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "material_downloads_material_id_fkey"
-            columns: ["material_id"]
-            isOneToOne: false
-            referencedRelation: "materials"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       material_purchases: {
         Row: {
           amount_paid: number
@@ -232,9 +167,6 @@ export type Database = {
       }
       materials: {
         Row: {
-          approval_status: string | null
-          approved_at: string | null
-          approved_by: string | null
           created_at: string
           description: string | null
           download_count: number | null
@@ -244,16 +176,12 @@ export type Database = {
           id: string
           is_approved: boolean | null
           price: number | null
-          rejection_reason: string | null
           subject: string
           title: string
           tutor_id: string
           updated_at: string
         }
         Insert: {
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
           description?: string | null
           download_count?: number | null
@@ -263,16 +191,12 @@ export type Database = {
           id?: string
           is_approved?: boolean | null
           price?: number | null
-          rejection_reason?: string | null
           subject: string
           title: string
           tutor_id: string
           updated_at?: string
         }
         Update: {
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
           description?: string | null
           download_count?: number | null
@@ -282,7 +206,6 @@ export type Database = {
           id?: string
           is_approved?: boolean | null
           price?: number | null
-          rejection_reason?: string | null
           subject?: string
           title?: string
           tutor_id?: string
@@ -382,8 +305,6 @@ export type Database = {
           bio: string | null
           created_at: string
           education: string | null
-          email: string | null
-          email_confirmed_at: string | null
           experience_years: number | null
           first_name: string | null
           hourly_rate: number | null
@@ -393,8 +314,6 @@ export type Database = {
           location: string | null
           phone: string | null
           profile_image_url: string | null
-          qualifications: string[] | null
-          subject_interests: string[] | null
           subjects: string[] | null
           updated_at: string
           user_id: string
@@ -404,8 +323,6 @@ export type Database = {
           bio?: string | null
           created_at?: string
           education?: string | null
-          email?: string | null
-          email_confirmed_at?: string | null
           experience_years?: number | null
           first_name?: string | null
           hourly_rate?: number | null
@@ -415,8 +332,6 @@ export type Database = {
           location?: string | null
           phone?: string | null
           profile_image_url?: string | null
-          qualifications?: string[] | null
-          subject_interests?: string[] | null
           subjects?: string[] | null
           updated_at?: string
           user_id: string
@@ -426,8 +341,6 @@ export type Database = {
           bio?: string | null
           created_at?: string
           education?: string | null
-          email?: string | null
-          email_confirmed_at?: string | null
           experience_years?: number | null
           first_name?: string | null
           hourly_rate?: number | null
@@ -437,8 +350,6 @@ export type Database = {
           location?: string | null
           phone?: string | null
           profile_image_url?: string | null
-          qualifications?: string[] | null
-          subject_interests?: string[] | null
           subjects?: string[] | null
           updated_at?: string
           user_id?: string
@@ -488,101 +399,6 @@ export type Database = {
           },
         ]
       }
-      session_events: {
-        Row: {
-          booking_id: string
-          changed_by: string | null
-          created_at: string
-          event_type: string
-          id: string
-          new_status: string | null
-          notes: string | null
-          old_status: string | null
-        }
-        Insert: {
-          booking_id: string
-          changed_by?: string | null
-          created_at?: string
-          event_type: string
-          id?: string
-          new_status?: string | null
-          notes?: string | null
-          old_status?: string | null
-        }
-        Update: {
-          booking_id?: string
-          changed_by?: string | null
-          created_at?: string
-          event_type?: string
-          id?: string
-          new_status?: string | null
-          notes?: string | null
-          old_status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_events_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stripe_events: {
-        Row: {
-          created_at: string
-          event_type: string
-          id: string
-          payload: Json
-          processed: boolean | null
-          processed_at: string | null
-          stripe_event_id: string
-        }
-        Insert: {
-          created_at?: string
-          event_type: string
-          id?: string
-          payload: Json
-          processed?: boolean | null
-          processed_at?: string | null
-          stripe_event_id: string
-        }
-        Update: {
-          created_at?: string
-          event_type?: string
-          id?: string
-          payload?: Json
-          processed?: boolean | null
-          processed_at?: string | null
-          stripe_event_id?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -596,20 +412,9 @@ export type Database = {
         Args: { tutor_user_id: string }
         Returns: number
       }
-      get_user_roles: {
-        Args: { _user_id: string }
-        Returns: Database["public"]["Enums"]["app_role"][]
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
     }
     Enums: {
-      app_role: "admin" | "tutor" | "student"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -736,8 +541,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "tutor", "student"],
-    },
+    Enums: {},
   },
 } as const
