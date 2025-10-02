@@ -5,6 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 interface AuthContextType {
   user: User | null;
   profile: any | null;
+  roles: string[];
+  isAdmin: boolean;
+  isTutor: boolean;
+  isStudent: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -23,6 +27,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -35,8 +40,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       setProfile(data);
+      
+      // Fetch user roles
+      await fetchRoles(userId);
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchRoles = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      setRoles(data?.map(r => r.role) || []);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      setRoles([]);
     }
   };
 
@@ -76,10 +99,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setRoles([]);
   };
 
+  const isAdmin = roles.includes('admin');
+  const isTutor = roles.includes('tutor');
+  const isStudent = roles.includes('student');
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      profile, 
+      roles, 
+      isAdmin, 
+      isTutor, 
+      isStudent, 
+      loading, 
+      signOut, 
+      refreshProfile 
+    }}>
       {children}
     </AuthContext.Provider>
   );
