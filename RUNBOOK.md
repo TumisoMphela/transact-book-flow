@@ -1,319 +1,238 @@
-# OUTLOOK Tutoring Platform - Operations Runbook
-
-## Overview
-This runbook contains common operational procedures for the OUTLOOK Tutoring platform.
+# OutLook Tutoring - Operations Runbook
 
 ## Table of Contents
-1. [Admin Operations](#admin-operations)
-2. [Material Management](#material-management)
-3. [Booking Management](#booking-management)
-4. [Payment Operations](#payment-operations)
-5. [User Management](#user-management)
-6. [Troubleshooting](#troubleshooting)
+1. [Common Admin Operations](#common-admin-operations)
+2. [Material Approval Workflow](#material-approval-workflow)
+3. [Troubleshooting](#troubleshooting)
+4. [Database Maintenance](#database-maintenance)
+5. [Monitoring & Alerts](#monitoring--alerts)
 
----
+## Common Admin Operations
 
-## Admin Operations
+### Approve/Reject Materials
 
-### Granting Admin Access
-To grant admin access to a user:
+**Via Admin Dashboard:**
+1. Navigate to `/dashboard` and select "Material Approval" tab
+2. Review material details and click "View" to inspect file
+3. Click "Approve" or "Reject" with reason
+4. All actions are logged in `admin_audit_log` table
 
+**Via Database (emergency):**
 ```sql
--- Get the user's ID first
-SELECT id, email FROM auth.users WHERE email = 'user@example.com';
+-- Approve material
+UPDATE materials 
+SET approval_status = 'approved',
+    approved_by = '<admin_user_id>',
+    approved_at = NOW()
+WHERE id = '<material_id>';
 
--- Add admin role
-INSERT INTO public.user_roles (user_id, role, created_by)
-VALUES ('user-uuid-here', 'admin', 'your-admin-uuid');
+-- Reject material
+UPDATE materials 
+SET approval_status = 'rejected',
+    rejection_reason = 'Reason here',
+    approved_by = '<admin_user_id>',
+    approved_at = NOW()
+WHERE id = '<material_id>';
 ```
 
-### Viewing Audit Logs
+### Verify Tutors
+
+**Via Admin Dashboard:**
+1. Navigate to "Tutor Verification" tab
+2. Review tutor profile, education, and credentials
+3. Click "Verify" or "Unverify"
+
+**Via Database:**
 ```sql
-SELECT 
-  aal.created_at,
-  u.email as admin_email,
-  aal.action,
-  aal.target_table,
-  aal.reason
-FROM admin_audit_log aal
-JOIN auth.users u ON u.id = aal.admin_id
-ORDER BY aal.created_at DESC
-LIMIT 50;
+UPDATE profiles 
+SET is_verified = true 
+WHERE user_id = '<tutor_user_id>';
 ```
 
----
+### Manage User Roles
 
-## Material Management
-
-### Approving a Material
-1. Navigate to Admin Dashboard → Material Approval tab
-2. Click "View" to review the material
-3. Click "Approve" to approve or "Reject" to reject
-4. If rejecting, provide a reason
-
-Or via SQL:
+**Add role to user:**
 ```sql
-UPDATE public.materials
-SET 
-  approval_status = 'approved',
-  approved_by = 'admin-user-id',
-  approved_at = NOW()
-WHERE id = 'material-id';
+INSERT INTO user_roles (user_id, role, created_by)
+VALUES ('<user_id>', 'admin', '<admin_user_id>');
 ```
 
-### Bulk Approve Materials from a Trusted Tutor
+**Remove role:**
 ```sql
-UPDATE public.materials
-SET 
-  approval_status = 'approved',
-  approved_by = 'admin-user-id',
-  approved_at = NOW()
-WHERE tutor_id = 'tutor-user-id' 
-  AND approval_status = 'pending';
+DELETE FROM user_roles 
+WHERE user_id = '<user_id>' AND role = 'admin';
 ```
 
-### View Pending Materials
+**Check user roles:**
 ```sql
-SELECT 
-  m.id,
-  m.title,
-  m.subject,
-  m.created_at,
-  p.first_name || ' ' || p.last_name as tutor_name
-FROM materials m
-JOIN profiles p ON p.user_id = m.tutor_id
-WHERE m.approval_status = 'pending'
-ORDER BY m.created_at ASC;
+SELECT * FROM user_roles WHERE user_id = '<user_id>';
 ```
 
----
+### Handle Refunds
 
-## Booking Management
-
-### View Booking History for a User
+1. Access Stripe Dashboard
+2. Find payment via `stripe_session_id` from `payment_sessions` table
+3. Issue refund in Stripe
+4. Optionally update booking status:
 ```sql
-SELECT 
-  b.id,
-  b.session_date,
-  b.status,
-  b.total_amount,
-  tutor.first_name || ' ' || tutor.last_name as tutor_name,
-  student.first_name || ' ' || student.last_name as student_name
-FROM bookings b
-JOIN profiles tutor ON tutor.user_id = b.tutor_id
-JOIN profiles student ON student.user_id = b.student_id
-WHERE b.student_id = 'user-id' OR b.tutor_id = 'user-id'
-ORDER BY b.session_date DESC;
+UPDATE bookings 
+SET status = 'cancelled',
+    notes = COALESCE(notes, '') || ' - Refunded on ' || NOW()
+WHERE id = '<booking_id>';
 ```
 
-### Cancel a Booking
-```sql
-UPDATE bookings
-SET status = 'cancelled'
-WHERE id = 'booking-id';
+## Material Approval Workflow
 
--- Log the event
-INSERT INTO session_events (booking_id, event_type, old_status, new_status, notes)
-VALUES ('booking-id', 'admin_cancelled', 'previous-status', 'cancelled', 'Cancelled by admin');
-```
+### States
+- `draft`: Tutor saved but not submitted (future feature)
+- `pending`: Submitted, awaiting admin review
+- `approved`: Visible in public library
+- `rejected`: Not visible, tutor can see rejection reason
 
-### View All Completed Sessions
-```sql
-SELECT 
-  b.id,
-  b.session_date,
-  b.total_amount,
-  b.subject,
-  tutor.first_name || ' ' || tutor.last_name as tutor_name
-FROM bookings b
-JOIN profiles tutor ON tutor.user_id = b.tutor_id
-WHERE b.status = 'completed'
-ORDER BY b.session_date DESC;
-```
+### Security Features
+1. **Download tracking**: All downloads logged in `material_downloads`
+2. **Purchase verification**: Paid materials require purchase record
+3. **Secure URLs**: Edge function `secure-download` generates time-limited signed URLs (60s)
 
----
-
-## Payment Operations
-
-### Process a Manual Refund
-1. **Issue refund in Stripe Dashboard** first
-2. Then update the database:
-
-```sql
--- Update payment session
-UPDATE payment_sessions
-SET payment_status = 'refunded'
-WHERE stripe_session_id = 'stripe-session-id';
-
--- Update booking status
-UPDATE bookings
-SET status = 'cancelled'
-WHERE id = (
-  SELECT booking_id 
-  FROM payment_sessions 
-  WHERE stripe_session_id = 'stripe-session-id'
-);
-
--- Log the event
-INSERT INTO session_events (booking_id, event_type, old_status, new_status, notes)
-SELECT 
-  booking_id,
-  'refund_processed',
-  'confirmed',
-  'cancelled',
-  'Refund processed by admin'
-FROM payment_sessions
-WHERE stripe_session_id = 'stripe-session-id';
-```
-
-### View Failed Payments
-```sql
-SELECT 
-  ps.id,
-  ps.created_at,
-  ps.payment_status,
-  ps.stripe_session_id,
-  b.student_id,
-  p.email
-FROM payment_sessions ps
-JOIN bookings b ON b.id = ps.booking_id
-JOIN auth.users p ON p.id = b.student_id
-WHERE ps.payment_status = 'failed'
-ORDER BY ps.created_at DESC;
-```
-
-### Check Stripe Webhook Status
-```sql
-SELECT 
-  stripe_event_id,
-  event_type,
-  processed,
-  created_at,
-  processed_at
-FROM stripe_events
-ORDER BY created_at DESC
-LIMIT 20;
-```
-
----
-
-## User Management
-
-### Verify a Tutor
-```sql
-UPDATE profiles
-SET is_verified = true
-WHERE user_id = 'tutor-user-id';
-```
-
-### View User Roles
-```sql
-SELECT 
-  u.email,
-  ARRAY_AGG(ur.role) as roles,
-  p.first_name,
-  p.last_name
-FROM auth.users u
-LEFT JOIN user_roles ur ON ur.user_id = u.id
-LEFT JOIN profiles p ON p.user_id = u.id
-GROUP BY u.id, u.email, p.first_name, p.last_name
-ORDER BY u.email;
-```
-
-### Disable a User Account
-```sql
--- This requires accessing Supabase Auth dashboard
--- Go to Authentication → Users → Select user → Disable
-```
-
----
+### Approval Checklist
+- [ ] Content is educational and appropriate
+- [ ] File type is valid (PDF, DOCX, PPTX)
+- [ ] No copyright violations
+- [ ] Pricing is reasonable for content
+- [ ] File size is acceptable (<50MB)
 
 ## Troubleshooting
 
-### Webhook Not Processing
-1. Check Stripe webhook logs in Stripe Dashboard
-2. Verify webhook secret is correct:
-   ```bash
-   supabase secrets list
-   ```
-3. Check edge function logs:
-   ```bash
-   supabase functions logs improved-stripe-webhook
-   ```
-4. Manually reprocess failed webhook:
-   ```sql
-   UPDATE stripe_events
-   SET processed = false
-   WHERE stripe_event_id = 'evt_xxx';
-   ```
+### Issue: User can't access protected route
+**Check:**
+1. User email is confirmed: `SELECT email_confirmed_at FROM profiles WHERE user_id = '<user_id>'`
+2. User has correct role: `SELECT * FROM user_roles WHERE user_id = '<user_id>'`
+3. Session is valid (check AuthContext state)
 
-### Material Not Showing After Approval
-1. Check approval status:
-   ```sql
-   SELECT id, title, approval_status, approved_at
-   FROM materials
-   WHERE id = 'material-id';
-   ```
-2. Verify RLS policies allow access
-3. Check frontend filters
+### Issue: Material upload fails
+**Common causes:**
+1. File size >50MB
+2. Invalid file type
+3. Storage bucket permissions
+4. Network timeout
 
-### Booking Stuck in Pending
-1. Check payment status:
-   ```sql
-   SELECT ps.payment_status, ps.stripe_session_id, b.status
-   FROM bookings b
-   LEFT JOIN payment_sessions ps ON ps.booking_id = b.id
-   WHERE b.id = 'booking-id';
-   ```
-2. Check Stripe session in Stripe Dashboard
-3. Manually update if payment succeeded:
-   ```sql
-   UPDATE bookings SET status = 'confirmed' WHERE id = 'booking-id';
-   ```
-
-### User Can't Download Purchased Material
-1. Verify purchase exists:
-   ```sql
-   SELECT * FROM material_purchases
-   WHERE material_id = 'material-id' AND student_id = 'user-id';
-   ```
-2. Check material approval status
-3. Verify secure-download edge function is working
-
----
-
-## Monitoring
-
-### Key Metrics to Monitor
+**Fix:**
 ```sql
--- Daily signups
-SELECT DATE(created_at), COUNT(*) 
-FROM auth.users 
-WHERE created_at >= NOW() - INTERVAL '7 days'
-GROUP BY DATE(created_at);
+-- Check storage quota
+SELECT * FROM storage.buckets WHERE name = 'materials';
 
--- Revenue by day
-SELECT DATE(created_at), SUM(amount_paid) 
-FROM payment_sessions 
-WHERE payment_status = 'paid' 
-  AND created_at >= NOW() - INTERVAL '30 days'
-GROUP BY DATE(created_at);
-
--- Active tutors (with at least one booking)
-SELECT COUNT(DISTINCT tutor_id)
-FROM bookings
-WHERE session_date >= NOW() - INTERVAL '30 days';
+-- List recent uploads
+SELECT * FROM storage.objects 
+WHERE bucket_id = 'materials' 
+ORDER BY created_at DESC LIMIT 10;
 ```
 
----
+### Issue: Stripe webhook not processing
+**Check:**
+1. Webhook endpoint is reachable
+2. Webhook signing secret is correct
+3. Event already processed (idempotency):
+```sql
+SELECT * FROM stripe_events 
+WHERE stripe_event_id = '<event_id>';
+```
+
+**Manually process:**
+```sql
+-- Mark as unprocessed to retry
+UPDATE stripe_events 
+SET processed = false, processed_at = NULL
+WHERE stripe_event_id = '<event_id>';
+```
+
+### Issue: Download count not updating
+**Fix:**
+```sql
+-- Recalculate from download logs
+UPDATE materials m
+SET download_count = (
+  SELECT COUNT(*) 
+  FROM material_downloads md 
+  WHERE md.material_id = m.id
+)
+WHERE id = '<material_id>';
+```
+
+## Database Maintenance
+
+### Check RLS Policies
+```sql
+-- List all policies
+SELECT schemaname, tablename, policyname, cmd, qual, with_check
+FROM pg_policies 
+WHERE schemaname = 'public'
+ORDER BY tablename, policyname;
+```
+
+### Audit Log Retention
+```sql
+-- Archive old audit logs (>90 days)
+DELETE FROM admin_audit_log 
+WHERE created_at < NOW() - INTERVAL '90 days';
+```
+
+### Clean Up Failed Sessions
+```sql
+-- Remove expired payment sessions
+DELETE FROM payment_sessions 
+WHERE payment_status = 'pending' 
+  AND created_at < NOW() - INTERVAL '24 hours';
+```
+
+## Monitoring & Alerts
+
+### Key Metrics to Monitor
+
+**Daily Stats:**
+```sql
+-- New signups
+SELECT COUNT(*) FROM profiles 
+WHERE created_at > NOW() - INTERVAL '24 hours';
+
+-- Bookings today
+SELECT COUNT(*), SUM(total_amount) 
+FROM bookings 
+WHERE session_date::date = CURRENT_DATE;
+
+-- Materials pending approval
+SELECT COUNT(*) FROM materials 
+WHERE approval_status = 'pending';
+```
+
+**System Health:**
+```sql
+-- Failed webhook processing
+SELECT COUNT(*) FROM stripe_events 
+WHERE processed = false 
+  AND created_at > NOW() - INTERVAL '1 hour';
+
+-- Download errors (if tracking)
+SELECT COUNT(*) FROM material_downloads 
+WHERE downloaded_at > NOW() - INTERVAL '1 hour';
+```
+
+### Performance Indexes
+All critical queries are indexed:
+- `user_roles(user_id, role)`
+- `materials(approval_status)`
+- `bookings(status, session_date)`
+- `material_downloads(material_id, user_id)`
+
+### Backup Strategy
+- Supabase handles automatic backups
+- Consider exporting critical tables weekly
+- Test restoration process quarterly
 
 ## Emergency Contacts
-- **Technical Issues**: Check edge function logs and database logs
-- **Payment Issues**: Check Stripe Dashboard first
-- **User Reports**: Check admin_audit_log for recent changes
+- **Supabase Support**: Via dashboard
+- **Stripe Support**: dashboard.stripe.com/support
+- **On-Call Admin**: [Configure as needed]
 
-## Backup Procedures
-Regular backups are handled automatically by Supabase. To create a manual backup:
-1. Go to Supabase Dashboard → Database → Backups
-2. Click "Create Backup"
-3. Download if needed for migration purposes
+## Version
+Last updated: 2025-10-09
+Covers: Phase 1-4 implementation
