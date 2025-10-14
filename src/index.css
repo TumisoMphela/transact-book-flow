@@ -38,8 +38,8 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
-    /* Tutoring platform colors */
-    --education: 217.2 91.2% 59.8%;
+    /* Tutoring platform colors - Teal & Blue theme */
+    --education: 180 80% 40%;
     --education-foreground: 0 0% 100%;
     --success: 134 61% 41%;
     --success-foreground: 0 0% 100%;
