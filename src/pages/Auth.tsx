@@ -32,26 +32,35 @@ export const Auth = () => {
     setLoading(true);
 
     try {
+      console.log('[AUTH] Attempting sign in for:', formData.email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AUTH] Sign in error:', error);
+        throw error;
+      }
+
+      console.log('[AUTH] Sign in successful. Email confirmed:', !!data.user?.email_confirmed_at);
 
       // Check if email is confirmed
       if (data.user && !data.user.email_confirmed_at) {
+        console.warn('[AUTH] Email not verified for:', formData.email);
         setShowEmailVerification(true);
         setPendingEmail(formData.email);
         await supabase.auth.signOut(); // Sign out unconfirmed user
         toast({
           title: "Email Verification Required",
-          description: "Please verify your email address before signing in.",
+          description: "Please verify your email address before signing in. Check your inbox or click 'Resend Email' below.",
           variant: "destructive"
         });
         return;
       }
       
+      console.log('[AUTH] User authenticated successfully');
       toast({
         title: "Welcome back!",
         description: "Successfully signed in.",
@@ -68,7 +77,9 @@ export const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('[AUTH] Attempting sign up for:', formData.email);
+      
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -81,14 +92,26 @@ export const Auth = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AUTH] Sign up error:', error);
+        throw error;
+      }
+
+      console.log('[AUTH] Sign up successful. User ID:', data.user?.id);
+      console.log('[AUTH] Email confirmation required:', !data.user?.email_confirmed_at);
 
       setShowEmailVerification(true);
       setPendingEmail(formData.email);
+      
       toast({
         title: "Account Created!",
-        description: "Please check your email to verify your account before signing in.",
+        description: "Please check your email (including spam folder) to verify your account before signing in.",
       });
+
+      // Dev mode fallback: if this is a development/test environment and SMTP might not be configured
+      if (import.meta.env.DEV && formData.email.includes('@gmail.com')) {
+        console.warn('[AUTH] DEV MODE: If you do not receive an email within 2 minutes, SMTP may not be configured. Check Supabase Dashboard → Authentication → SMTP Settings');
+      }
     } catch (error: any) {
       handleAuthError(error);
     } finally {
@@ -100,6 +123,8 @@ export const Auth = () => {
     if (!pendingEmail) return;
     
     setResendLoading(true);
+    console.log('[AUTH] Resending verification email to:', pendingEmail);
+    
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
@@ -109,37 +134,62 @@ export const Auth = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AUTH] Resend error:', error);
+        throw error;
+      }
 
+      console.log('[AUTH] Verification email resent successfully');
+      
       toast({
-        title: "Email Sent",
-        description: "Verification email has been resent. Please check your inbox.",
+        title: "Email Sent ✓",
+        description: "Verification email has been resent. Please check your inbox and spam folder.",
       });
     } catch (error: any) {
-      toast({
-        title: "Failed to Resend Email",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error('[AUTH] Failed to resend verification email:', error);
+      
+      // Check if it's an SMTP configuration issue
+      if (error.message?.includes('SMTP') || error.message?.includes('email')) {
+        toast({
+          title: "Email Configuration Issue",
+          description: "The email service may not be configured. Please contact support or check Supabase SMTP settings.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Failed to Resend Email",
+          description: error.message || "An unknown error occurred. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setResendLoading(false);
     }
   };
 
   const handleAuthError = (error: any) => {
+    console.error('[AUTH] Error:', error);
+    
     let title = "Authentication Failed";
     let description = error.message;
 
-    if (error.message.includes("email not confirmed")) {
+    if (error.message?.includes("email not confirmed") || error.message?.includes("Email not confirmed")) {
       title = "Email Verification Required";
-      description = "Please verify your email address before signing in.";
+      description = "Please verify your email address before signing in. Check your inbox for the verification link.";
       setShowEmailVerification(true);
-    } else if (error.message.includes("Invalid login credentials")) {
+      setPendingEmail(formData.email);
+    } else if (error.message?.includes("Invalid login credentials")) {
       title = "Invalid Credentials";
       description = "Please check your email and password.";
-    } else if (error.message.includes("Email rate limit exceeded")) {
+    } else if (error.message?.includes("Email rate limit exceeded")) {
       title = "Too Many Attempts";
-      description = "Please wait before trying again.";
+      description = "Please wait a few minutes before trying again.";
+    } else if (error.message?.includes("User already registered")) {
+      title = "Account Already Exists";
+      description = "This email is already registered. Please sign in instead.";
+    } else if (error.message?.includes("SMTP") || error.message?.includes("email service")) {
+      title = "Email Service Error";
+      description = "There's an issue with the email service. Please contact support.";
     }
 
     toast({
