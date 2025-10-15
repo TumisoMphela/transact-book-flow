@@ -8,10 +8,19 @@ const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Non-blocking redirect for authenticated users
+  // Non-blocking redirect for authenticated users with delay to prevent flash
   useEffect(() => {
-    if (!loading && user) {
-      navigate('/dashboard');
+    let mounted = true;
+    
+    if (!loading && user && mounted) {
+      const timeoutId = setTimeout(() => {
+        if (mounted) navigate('/dashboard');
+      }, 100);
+      
+      return () => {
+        mounted = false;
+        clearTimeout(timeoutId);
+      };
     }
   }, [user, loading, navigate]);
 
