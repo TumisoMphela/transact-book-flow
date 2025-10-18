@@ -9,6 +9,8 @@ import { CheckCircle, XCircle, Users, FileText, Calendar, DollarSign, Eye } from
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { AnalyticsCharts } from './admin/AnalyticsCharts';
+import { AuditLogTable } from './admin/AuditLogTable';
 
 interface TutorProfile {
   id: string;
@@ -309,18 +311,21 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Admin Tabs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin Dashboard</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="tutors" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="tutors">Tutor Verification</TabsTrigger>
-              <TabsTrigger value="materials">Material Approval</TabsTrigger>
-            </TabsList>
+      <Tabs defaultValue="tutors" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="tutors">Tutor Verification</TabsTrigger>
+          <TabsTrigger value="materials">Material Approval</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="audit">Audit Log</TabsTrigger>
+        </TabsList>
 
-            <TabsContent value="tutors">
+        <TabsContent value="tutors">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tutor Verification</CardTitle>
+            </CardHeader>
+            <CardContent>
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -397,9 +402,16 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
-            </TabsContent>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <TabsContent value="materials">
+        <TabsContent value="materials">
+          <Card>
+            <CardHeader>
+              <CardTitle>Material Approval</CardTitle>
+            </CardHeader>
+            <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -477,10 +489,18 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <AnalyticsCharts />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <AuditLogTable />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -10,7 +10,9 @@ import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/Dashboard";
 import { BookingSuccess } from "./pages/BookingSuccess";
 import { Tutors } from "./pages/Tutors";
+import { TutorProfile } from "./pages/TutorProfile";
 import { Materials } from "./pages/Materials";
+import { Availability } from "./pages/Availability";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,10 +28,16 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/tutors" element={<Tutors />} />
+            <Route path="/tutors/:id" element={<TutorProfile />} />
             <Route path="/materials" element={<Materials />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/availability" element={
+              <ProtectedRoute>
+                <Availability />
               </ProtectedRoute>
             } />
             <Route path="/booking-success" element={

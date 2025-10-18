@@ -86,6 +86,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "availability_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_tutors"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       bookings: {
@@ -137,10 +144,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_tutors"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "bookings_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bookings_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_tutors"
             referencedColumns: ["user_id"]
           },
         ]
@@ -196,6 +217,13 @@ export type Database = {
             referencedRelation: "materials"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "material_downloads_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_materials"
+            referencedColumns: ["id"]
+          },
         ]
       }
       material_purchases: {
@@ -226,6 +254,13 @@ export type Database = {
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_purchases_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_materials"
             referencedColumns: ["id"]
           },
         ]
@@ -294,6 +329,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "materials_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_tutors"
             referencedColumns: ["user_id"]
           },
         ]
@@ -480,10 +522,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_tutors"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "reviews_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "reviews_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "v_top_tutors"
             referencedColumns: ["user_id"]
           },
         ]
@@ -585,7 +641,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_bookings_daily: {
+        Row: {
+          bookings: number | null
+          day: string | null
+        }
+        Relationships: []
+      }
+      v_revenue_daily: {
+        Row: {
+          day: string | null
+          revenue: number | null
+        }
+        Relationships: []
+      }
+      v_top_materials: {
+        Row: {
+          id: string | null
+          sales: number | null
+          subject: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
+      v_top_tutors: {
+        Row: {
+          first_name: string | null
+          last_name: string | null
+          revenue: number | null
+          sessions: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_tutor_average_rating: {
@@ -605,6 +693,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_within_availability: {
+        Args: { _end: string; _start: string; _tutor: string }
         Returns: boolean
       }
     }
