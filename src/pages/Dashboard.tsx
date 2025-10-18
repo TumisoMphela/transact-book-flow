@@ -72,8 +72,8 @@ export const Dashboard = () => {
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const [selectedMessageUserId, setSelectedMessageUserId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [rateFilter, setRateFilter] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('all');
+  const [rateFilter, setRateFilter] = useState('any');
   const [locationFilter, setLocationFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -182,9 +182,9 @@ export const Dashboard = () => {
     const matchesSearch = `${tutor.first_name} ${tutor.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tutor.subjects?.some(subject => subject.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesSubject = !selectedSubject || tutor.subjects?.includes(selectedSubject);
+    const matchesSubject = !selectedSubject || selectedSubject === 'all' || tutor.subjects?.includes(selectedSubject);
     
-    const matchesRate = !rateFilter || 
+    const matchesRate = !rateFilter || rateFilter === 'any' ||
                        (rateFilter === 'low' && tutor.hourly_rate <= 30) ||
                        (rateFilter === 'medium' && tutor.hourly_rate > 30 && tutor.hourly_rate <= 60) ||
                        (rateFilter === 'high' && tutor.hourly_rate > 60);
@@ -317,7 +317,7 @@ export const Dashboard = () => {
                         <SelectValue placeholder="Subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All subjects</SelectItem>
+                        <SelectItem value="all">All subjects</SelectItem>
                         {subjects.map((subject) => (
                           <SelectItem key={subject} value={subject}>
                             {subject}
@@ -331,7 +331,7 @@ export const Dashboard = () => {
                         <SelectValue placeholder="Hourly rate" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any rate</SelectItem>
+                        <SelectItem value="any">Any rate</SelectItem>
                         <SelectItem value="low">$0-30/hr</SelectItem>
                         <SelectItem value="medium">$30-60/hr</SelectItem>
                         <SelectItem value="high">$60+/hr</SelectItem>
@@ -350,8 +350,8 @@ export const Dashboard = () => {
                     className="mt-4"
                     onClick={() => {
                       setSearchTerm('');
-                      setSelectedSubject('');
-                      setRateFilter('');
+                      setSelectedSubject('all');
+                      setRateFilter('any');
                       setLocationFilter('');
                     }}
                   >

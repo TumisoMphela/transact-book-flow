@@ -39,8 +39,8 @@ export const Tutors = () => {
   const navigate = useNavigate();
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [rateFilter, setRateFilter] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('all');
+  const [rateFilter, setRateFilter] = useState('any');
   const [loading, setLoading] = useState(true);
 
   const subjects = [
@@ -93,9 +93,9 @@ export const Tutors = () => {
     const matchesSearch = `${tutor.first_name} ${tutor.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tutor.subjects?.some(subject => subject.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesSubject = !selectedSubject || tutor.subjects?.includes(selectedSubject);
+    const matchesSubject = !selectedSubject || selectedSubject === 'all' || tutor.subjects?.includes(selectedSubject);
     
-    const matchesRate = !rateFilter || 
+    const matchesRate = !rateFilter || rateFilter === 'any' ||
                        (rateFilter === 'low' && tutor.hourly_rate <= 30) ||
                        (rateFilter === 'medium' && tutor.hourly_rate > 30 && tutor.hourly_rate <= 60) ||
                        (rateFilter === 'high' && tutor.hourly_rate > 60);
@@ -179,7 +179,7 @@ export const Tutors = () => {
                   <SelectValue placeholder="All subjects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All subjects</SelectItem>
+                  <SelectItem value="all">All subjects</SelectItem>
                   {subjects.map((subject) => (
                     <SelectItem key={subject} value={subject}>
                       {subject}
@@ -193,7 +193,7 @@ export const Tutors = () => {
                   <SelectValue placeholder="Any rate" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any rate</SelectItem>
+                  <SelectItem value="any">Any rate</SelectItem>
                   <SelectItem value="low">$0-30/hr</SelectItem>
                   <SelectItem value="medium">$30-60/hr</SelectItem>
                   <SelectItem value="high">$60+/hr</SelectItem>
@@ -290,8 +290,8 @@ export const Tutors = () => {
             </p>
             <Button onClick={() => {
               setSearchTerm('');
-              setSelectedSubject('');
-              setRateFilter('');
+              setSelectedSubject('all');
+              setRateFilter('any');
             }}>
               Clear Filters
             </Button>

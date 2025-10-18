@@ -39,8 +39,8 @@ export const Materials = () => {
   const navigate = useNavigate();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [priceFilter, setPriceFilter] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('all');
+  const [priceFilter, setPriceFilter] = useState('all');
   const [loading, setLoading] = useState(true);
 
   const subjects = [
@@ -82,9 +82,9 @@ export const Materials = () => {
     const matchesSearch = material.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          material.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSubject = !selectedSubject || material.subject === selectedSubject;
+    const matchesSubject = !selectedSubject || selectedSubject === 'all' || material.subject === selectedSubject;
     
-    const matchesPrice = !priceFilter || 
+    const matchesPrice = !priceFilter || priceFilter === 'all' ||
                         (priceFilter === 'free' && material.price === 0) ||
                         (priceFilter === 'paid' && material.price > 0);
 
@@ -186,7 +186,7 @@ export const Materials = () => {
                   <SelectValue placeholder="All subjects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All subjects</SelectItem>
+                  <SelectItem value="all">All subjects</SelectItem>
                   {subjects.map((subject) => (
                     <SelectItem key={subject} value={subject}>
                       {subject}
@@ -200,7 +200,7 @@ export const Materials = () => {
                   <SelectValue placeholder="All materials" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All materials</SelectItem>
+                  <SelectItem value="all">All materials</SelectItem>
                   <SelectItem value="free">Free only</SelectItem>
                   <SelectItem value="paid">Paid only</SelectItem>
                 </SelectContent>
@@ -276,8 +276,8 @@ export const Materials = () => {
             </p>
             <Button onClick={() => {
               setSearchTerm('');
-              setSelectedSubject('');
-              setPriceFilter('');
+              setSelectedSubject('all');
+              setPriceFilter('all');
             }}>
               Clear Filters
             </Button>
