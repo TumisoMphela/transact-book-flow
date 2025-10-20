@@ -13,6 +13,7 @@ import { MaterialUpload } from '@/components/MaterialUpload';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { Profile } from '@/components/Profile';
 import { toast } from '@/hooks/use-toast';
+import { safeError, logError } from '@/lib/safeError';
 import { format } from 'date-fns';
 import { 
   Calendar, 
@@ -88,27 +89,49 @@ export const Dashboard = () => {
     }
   }, [user, profile]);
 
-  // Real-time updates for bookings
+  // Real-time updates for bookings (student side)
   useRealtimeUpdates({
     tableName: 'bookings',
-    filter: `student_id=eq.${user?.id},tutor_id=eq.${user?.id}`,
+    filter: user?.id ? `student_id=eq.${user.id}` : undefined,
     onInsert: (payload) => {
-      console.log('New booking:', payload);
-      fetchBookings(); // Refresh bookings when new booking is created
+      console.log('New booking (student):', payload);
+      fetchBookings();
     },
     onUpdate: (payload) => {
-      console.log('Booking updated:', payload);
-      fetchBookings(); // Refresh bookings when booking is updated
+      console.log('Booking updated (student):', payload);
+      fetchBookings();
     }
   });
 
-  // Real-time updates for messages
+  // Real-time updates for bookings (tutor side)
+  useRealtimeUpdates({
+    tableName: 'bookings',
+    filter: user?.id ? `tutor_id=eq.${user.id}` : undefined,
+    onInsert: (payload) => {
+      console.log('New booking (tutor):', payload);
+      fetchBookings();
+    },
+    onUpdate: (payload) => {
+      console.log('Booking updated (tutor):', payload);
+      fetchBookings();
+    }
+  });
+
+  // Real-time updates for messages (as sender)
   useRealtimeUpdates({
     tableName: 'messages',
-    filter: `sender_id=eq.${user?.id},receiver_id=eq.${user?.id}`,
+    filter: user?.id ? `sender_id=eq.${user.id}` : undefined,
     onInsert: (payload) => {
-      console.log('New message:', payload);
-      // Could show notification here
+      console.log('New message sent:', payload);
+    }
+  });
+
+  // Real-time updates for messages (as receiver)
+  useRealtimeUpdates({
+    tableName: 'messages',
+    filter: user?.id ? `receiver_id=eq.${user.id}` : undefined,
+    onInsert: (payload) => {
+      console.log('New message received:', payload);
     }
   });
 
@@ -126,10 +149,10 @@ export const Dashboard = () => {
       setLoading(true);
       await Promise.all([fetchTutors(), fetchBookings()]);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      logError(error, 'Dashboard.fetchData');
       toast({
         title: "Error",
-        description: "Failed to load dashboard data",
+        description: safeError(error),
         variant: "destructive"
       });
     } finally {
@@ -138,13 +161,14 @@ export const Dashboard = () => {
   };
 
   const fetchTutors = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_type', 'tutor')
-      .not('hourly_rate', 'is', null);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_type', 'tutor')
+        .not('hourly_rate', 'is', null);
 
-    if (error) throw error;
+      if (error) throw error;
     
     // Fetch ratings for each tutor
     const tutorsWithRatings = await Promise.all(
@@ -158,24 +182,33 @@ export const Dashboard = () => {
           review_count: reviewCount || 0
         };
       })
-    );
-    
-    setTutors(tutorsWithRatings);
+      );
+      
+      setTutors(tutorsWithRatings);
+    } catch (error) {
+      logError(error, 'Dashboard.fetchTutors');
+      throw error;
+    }
   };
 
   const fetchBookings = async () => {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        tutor:profiles!tutor_id(first_name, last_name),
-        student:profiles!student_id(first_name, last_name)
-      `)
-      .or(`student_id.eq.${user.id},tutor_id.eq.${user.id}`)
-      .order('session_date', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          tutor:profiles!tutor_id(first_name, last_name),
+          student:profiles!student_id(first_name, last_name)
+        `)
+        .or(`student_id.eq.${user.id},tutor_id.eq.${user.id}`)
+        .order('session_date', { ascending: false });
 
-    if (error) throw error;
-    setBookings(data || []);
+      if (error) throw error;
+      setBookings(data || []);
+    } catch (error) {
+      logError(error, 'Dashboard.fetchBookings');
+      throw error;
+    }
   };
 
   const filteredTutors = tutors.filter(tutor => {
