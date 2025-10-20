@@ -75,57 +75,59 @@ export const AnalyticsCharts: React.FC = () => {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - days);
 
-      // Fetch revenue data
+      // Fetch revenue data using secure RPC
       const { data: revData, error: revError } = await supabase
-        .from('v_revenue_daily')
-        .select('*')
-        .gte('day', cutoff.toISOString().split('T')[0])
-        .order('day', { ascending: true });
+        .rpc('get_revenue_daily');
 
       if (revError) throw revError;
+      
+      const filteredRevData = (revData || []).filter(r => {
+        const recordDate = new Date(r.day);
+        return recordDate >= cutoff;
+      });
+      
       setRevenueData(
-        (revData || []).map(r => ({
+        filteredRevData.map(r => ({
           day: new Date(r.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           revenue: parseFloat(r.revenue?.toString() || '0')
         }))
       );
 
-      // Fetch booking data
+      // Fetch booking data using secure RPC
       const { data: bookData, error: bookError } = await supabase
-        .from('v_bookings_daily')
-        .select('*')
-        .gte('day', cutoff.toISOString().split('T')[0])
-        .order('day', { ascending: true });
+        .rpc('get_bookings_daily');
 
       if (bookError) throw bookError;
+      
+      const filteredBookData = (bookData || []).filter(b => {
+        const recordDate = new Date(b.day);
+        return recordDate >= cutoff;
+      });
+      
       setBookingData(
-        (bookData || []).map(b => ({
+        filteredBookData.map(b => ({
           day: new Date(b.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           bookings: b.bookings || 0
         }))
       );
 
-      // Fetch top tutors
+      // Fetch top tutors using secure RPC
       const { data: tutorData, error: tutorError } = await supabase
-        .from('v_top_tutors')
-        .select('*')
-        .limit(5);
+        .rpc('get_top_tutors');
 
       if (tutorError) throw tutorError;
-      setTopTutors(tutorData || []);
+      setTopTutors((tutorData || []).slice(0, 5));
 
-      // Fetch top materials
+      // Fetch top materials using secure RPC
       const { data: matData, error: matError } = await supabase
-        .from('v_top_materials')
-        .select('*')
-        .limit(5);
+        .rpc('get_top_materials');
 
       if (matError) throw matError;
-      setTopMaterials(matData || []);
+      setTopMaterials((matData || []).slice(0, 5));
 
       // Calculate KPIs
-      const totalRev = (revData || []).reduce((sum, r) => sum + (parseFloat(r.revenue?.toString() || '0')), 0);
-      const totalBook = (bookData || []).reduce((sum, b) => sum + (Number(b.bookings) || 0), 0);
+      const totalRev = filteredRevData.reduce((sum, r) => sum + (parseFloat(r.revenue?.toString() || '0')), 0);
+      const totalBook = filteredBookData.reduce((sum, b) => sum + (Number(b.bookings) || 0), 0);
       const topT = tutorData?.[0] ? `${tutorData[0].first_name} ${tutorData[0].last_name}` : '-';
       const topM = matData?.[0]?.title || '-';
 

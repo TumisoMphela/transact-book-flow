@@ -55,10 +55,10 @@ export const Tutors = () => {
   const fetchTutors = async () => {
     try {
       setLoading(true);
+      // Use public_tutor_profiles view for secure, limited data access
       const { data, error } = await supabase
-        .from('profiles')
+        .from('public_tutor_profiles')
         .select('*')
-        .eq('user_type', 'tutor')
         .not('hourly_rate', 'is', null);
 
       if (error) throw error;

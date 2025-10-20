@@ -72,16 +72,20 @@ export const TutorProfile: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch tutor profile
+      // Fetch tutor profile using public view (secure, limited fields)
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+        .from('public_tutor_profiles')
         .select('*')
         .eq('user_id', id)
-        .eq('user_type', 'tutor')
         .single();
 
       if (profileError) throw profileError;
-      setTutor(profileData);
+      
+      // Type assertion since view has slightly different shape
+      setTutor({
+        ...profileData,
+        qualifications: [] // Not included in public view for security
+      } as TutorData);
 
       // Fetch rating
       const { data: ratingData } = await supabase

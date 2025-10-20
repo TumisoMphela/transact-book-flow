@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,10 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[VERIFY-PAYMENT] ${step}${detailsStr}`);
 };
+
+const VerifyPaymentSchema = z.object({
+  sessionId: z.string().min(1, { message: 'Session ID is required' }),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,8 +35,24 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const { sessionId } = await req.json();
-    if (!sessionId) throw new Error("Session ID is required");
+    const body = await req.json();
+    const validation = VerifyPaymentSchema.safeParse(body);
+
+    if (!validation.success) {
+      logStep("Validation error", validation.error.issues);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid input", 
+          details: validation.error.issues 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
+    const { sessionId } = validation.data;
 
     logStep("Verifying payment session", { sessionId });
 

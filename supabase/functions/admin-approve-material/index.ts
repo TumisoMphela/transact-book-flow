@@ -1,10 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const ApproveMaterialSchema = z.object({
+  material_id: z.string().uuid({ message: 'Invalid material ID format' }),
+  approved: z.boolean(),
+  reason: z.string().max(500, { message: 'Reason must be less than 500 characters' }).optional(),
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -44,11 +51,23 @@ serve(async (req) => {
       throw new Error('Access denied - admin role required');
     }
 
-    const { material_id, approved, reason } = await req.json();
+    const body = await req.json();
+    const validation = ApproveMaterialSchema.safeParse(body);
 
-    if (!material_id) {
-      throw new Error('Material ID is required');
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input', 
+          details: validation.error.issues 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
+
+    const { material_id, approved, reason } = validation.data;
 
     const updateData: any = {
       approval_status: approved ? 'approved' : 'rejected',
@@ -97,10 +116,10 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Error in admin-approve-material:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Internal server error' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: error.message.includes('Access denied') ? 403 : 500
       }
     );
   }

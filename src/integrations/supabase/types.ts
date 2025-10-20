@@ -90,6 +90,13 @@ export type Database = {
             foreignKeyName: "availability_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
+            referencedRelation: "public_tutor_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "availability_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
             referencedRelation: "v_top_tutors"
             referencedColumns: ["user_id"]
           },
@@ -147,6 +154,13 @@ export type Database = {
             foreignKeyName: "bookings_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "public_tutor_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_top_tutors"
             referencedColumns: ["user_id"]
           },
@@ -155,6 +169,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bookings_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "public_tutor_profiles"
             referencedColumns: ["user_id"]
           },
           {
@@ -329,6 +350,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "materials_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "public_tutor_profiles"
             referencedColumns: ["user_id"]
           },
           {
@@ -525,6 +553,13 @@ export type Database = {
             foreignKeyName: "reviews_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "public_tutor_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_top_tutors"
             referencedColumns: ["user_id"]
           },
@@ -533,6 +568,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "reviews_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "public_tutor_profiles"
             referencedColumns: ["user_id"]
           },
           {
@@ -641,6 +683,48 @@ export type Database = {
       }
     }
     Views: {
+      public_tutor_profiles: {
+        Row: {
+          bio: string | null
+          education: string | null
+          experience_years: number | null
+          first_name: string | null
+          hourly_rate: number | null
+          is_verified: boolean | null
+          last_name: string | null
+          location: string | null
+          profile_image_url: string | null
+          subjects: string[] | null
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          education?: string | null
+          experience_years?: number | null
+          first_name?: string | null
+          hourly_rate?: number | null
+          is_verified?: boolean | null
+          last_name?: string | null
+          location?: string | null
+          profile_image_url?: string | null
+          subjects?: string[] | null
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          education?: string | null
+          experience_years?: number | null
+          first_name?: string | null
+          hourly_rate?: number | null
+          is_verified?: boolean | null
+          last_name?: string | null
+          location?: string | null
+          profile_image_url?: string | null
+          subjects?: string[] | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       v_bookings_daily: {
         Row: {
           bookings: number | null
@@ -676,6 +760,39 @@ export type Database = {
       }
     }
     Functions: {
+      get_bookings_daily: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bookings: number
+          day: string
+        }[]
+      }
+      get_revenue_daily: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          day: string
+          revenue: number
+        }[]
+      }
+      get_top_materials: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          sales: number
+          subject: string
+          title: string
+        }[]
+      }
+      get_top_tutors: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          first_name: string
+          last_name: string
+          revenue: number
+          sessions: number
+          user_id: string
+        }[]
+      }
       get_tutor_average_rating: {
         Args: { tutor_user_id: string }
         Returns: number

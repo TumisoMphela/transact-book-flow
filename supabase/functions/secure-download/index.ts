@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const SecureDownloadSchema = z.object({
+  material_id: z.string().uuid({ message: 'Invalid material ID format' }),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -31,11 +36,23 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { material_id } = await req.json();
+    const body = await req.json();
+    const validation = SecureDownloadSchema.safeParse(body);
 
-    if (!material_id) {
-      throw new Error('Material ID is required');
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input', 
+          details: validation.error.issues 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
+
+    const { material_id } = validation.data;
 
     // Get material details
     const { data: material, error: materialError } = await supabase
@@ -104,10 +121,10 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('Error in secure-download:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Internal server error' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: error.message.includes('Unauthorized') || error.message.includes('not purchased') ? 403 : 500
       }
     );
   }
