@@ -761,21 +761,21 @@ export type Database = {
     }
     Functions: {
       get_bookings_daily: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           bookings: number
           day: string
         }[]
       }
       get_revenue_daily: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           day: string
           revenue: number
         }[]
       }
       get_top_materials: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           id: string
           sales: number
@@ -784,7 +784,7 @@ export type Database = {
         }[]
       }
       get_top_tutors: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           first_name: string
           last_name: string
