@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom'; // ← Added
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast'; // ← Added
 
 interface AuthContextType {
   user: User | null;
@@ -29,72 +31,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<any | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const navigate = useNavigate(); // ← Added
 
   const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*, email_confirmed_at')
-        .eq('user_id', userId)
-        .single();
-      
-      if (error) throw error;
-      setProfile(data);
-      
-      // Fetch user roles
-      await fetchRoles(userId);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
+    // ... your existing fetchProfile code
   };
 
   const fetchRoles = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-      
-      if (error) throw error;
-      setRoles(data?.map(r => r.role) || []);
-    } catch (error) {
-      console.error('Error fetching roles:', error);
-      setRoles([]);
-    }
+    // ... your existing fetchRoles code
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
-    }
+    // ... your existing refreshProfile code
   };
 
   useEffect(() => {
     let mounted = true;
     
-    // Set up auth state listener FIRST
+    // ✅ ENHANCED: With email verification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (!mounted) return;
         
-        setUser(session?.user ?? null);
+        const user = session?.user;
+        setUser(user ?? null);
         
-        if (session?.user) {
-          // Defer profile fetch to prevent blocking
+        // CRITICAL: Check email verification
+        if (user && !user.email_confirmed_at) {
+          console.warn('[AUTH] Unverified user blocked:', user.email);
+          await supabase.auth.signOut();
+          setUser(null);
+          setProfile(null);
+          toast({
+            title: "Email Verification Required",
+            description: "Please verify your email before logging in.",
+            variant: "destructive"
+          });
+          navigate('/auth/verify');
+          setLoading(false);
+          return;
+        }
+        
+        if (user) {
           setTimeout(() => {
-            if (mounted) fetchProfile(session.user.id);
+            if (mounted) fetchProfile(user.id);
           }, 0);
         } else {
           setProfile(null);
           setRoles([]);
         }
         
-        // Always set loading to false after auth state change
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       
@@ -105,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // Fallback timeout: if still loading after 1 second, stop loading
+    // Fallback timeout
     const timeoutId = setTimeout(() => {
       if (mounted) {
         setLoading(false);
