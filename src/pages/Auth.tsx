@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,13 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { GraduationCap, UserCheck, Mail, AlertCircle } from 'lucide-react';
+import { GraduationCap, Mail, AlertCircle } from 'lucide-react';
 
 export const Auth = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [showEmailVerification, setShowEmailVerification] = useState(false);
-  const [pendingEmail, setPendingEmail] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -49,9 +48,13 @@ export const Auth = () => {
       // Check if email is confirmed
       if (data.user && !data.user.email_confirmed_at) {
         console.warn('[AUTH] Email not verified for:', formData.email);
-        setShowEmailVerification(true);
-        setPendingEmail(formData.email);
-        await supabase.auth.signOut(); // Sign out unconfirmed user
+        
+        // Sign out the unverified user
+        await supabase.auth.signOut();
+        
+        // Redirect to verification page
+        navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
+        
         toast({
           title: "Email Verification Required",
           description: "Please verify your email address before signing in. Check your inbox or click 'Resend Email' below.",
@@ -65,6 +68,8 @@ export const Auth = () => {
         title: "Welcome back!",
         description: "Successfully signed in.",
       });
+
+      // AuthContext will handle redirect to dashboard
     } catch (error: any) {
       handleAuthError(error);
     } finally {
@@ -83,7 +88,7 @@ export const Auth = () => {
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -100,8 +105,8 @@ export const Auth = () => {
       console.log('[AUTH] Sign up successful. User ID:', data.user?.id);
       console.log('[AUTH] Email confirmation required:', !data.user?.email_confirmed_at);
 
-      setShowEmailVerification(true);
-      setPendingEmail(formData.email);
+      // Redirect to verification page
+      navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
       
       toast({
         title: "Account Created!",
@@ -119,54 +124,6 @@ export const Auth = () => {
     }
   };
 
-  const handleResendVerification = async () => {
-    if (!pendingEmail) return;
-    
-    setResendLoading(true);
-    console.log('[AUTH] Resending verification email to:', pendingEmail);
-    
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: pendingEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) {
-        console.error('[AUTH] Resend error:', error);
-        throw error;
-      }
-
-      console.log('[AUTH] Verification email resent successfully');
-      
-      toast({
-        title: "Email Sent ✓",
-        description: "Verification email has been resent. Please check your inbox and spam folder.",
-      });
-    } catch (error: any) {
-      console.error('[AUTH] Failed to resend verification email:', error);
-      
-      // Check if it's an SMTP configuration issue
-      if (error.message?.includes('SMTP') || error.message?.includes('email')) {
-        toast({
-          title: "Email Configuration Issue",
-          description: "The email service may not be configured. Please contact support or check Supabase SMTP settings.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Failed to Resend Email",
-          description: error.message || "An unknown error occurred. Please try again.",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setResendLoading(false);
-    }
-  };
-
   const handleAuthError = (error: any) => {
     console.error('[AUTH] Error:', error);
     
@@ -176,8 +133,7 @@ export const Auth = () => {
     if (error.message?.includes("email not confirmed") || error.message?.includes("Email not confirmed")) {
       title = "Email Verification Required";
       description = "Please verify your email address before signing in. Check your inbox for the verification link.";
-      setShowEmailVerification(true);
-      setPendingEmail(formData.email);
+      navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
     } else if (error.message?.includes("Invalid login credentials")) {
       title = "Invalid Credentials";
       description = "Please check your email and password.";
@@ -211,27 +167,6 @@ export const Auth = () => {
           <p className="text-sm text-muted-foreground mt-2">Connect with expert tutors</p>
         </CardHeader>
         <CardContent>
-          {showEmailVerification && (
-            <Alert className="mb-4">
-              <Mail className="h-4 w-4" />
-              <AlertDescription className="flex flex-col gap-2">
-                <span>
-                  We've sent a verification email to <strong>{pendingEmail}</strong>. 
-                  Please check your inbox and click the verification link to activate your account.
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleResendVerification}
-                  disabled={resendLoading}
-                  className="self-start"
-                >
-                  {resendLoading ? 'Sending...' : 'Resend Email'}
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -247,6 +182,7 @@ export const Auth = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="your.email@example.com"
                     required
                   />
                 </div>
@@ -257,6 +193,7 @@ export const Auth = () => {
                     type="password"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
+                    placeholder="••••••••"
                     required
                   />
                 </div>
@@ -275,6 +212,7 @@ export const Auth = () => {
                       id="firstName"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      placeholder="John"
                       required
                     />
                   </div>
@@ -284,29 +222,36 @@ export const Auth = () => {
                       id="lastName"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      placeholder="Doe"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="signup-email">Email</Label>
                   <Input
-                    id="email"
+                    id="signup-email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="your.email@example.com"
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="signup-password">Password</Label>
                   <Input
-                    id="password"
+                    id="signup-password"
                     type="password"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
+                    placeholder="••••••••"
+                    minLength={6}
                     required
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Minimum 6 characters
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="userType">I am a...</Label>
