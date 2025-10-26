@@ -9,8 +9,6 @@ import { CheckCircle, XCircle, Users, FileText, Calendar, DollarSign, Eye } from
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { AnalyticsCharts } from './admin/AnalyticsCharts';
-import { AuditLogTable } from './admin/AuditLogTable';
 
 interface TutorProfile {
   id: string;
@@ -32,10 +30,7 @@ interface Material {
   title: string;
   subject: string;
   price: number;
-  approval_status: string;
-  rejection_reason?: string;
-  approved_by?: string;
-  approved_at?: string;
+  is_approved: boolean;
   download_count: number;
   file_size_mb: number;
   file_url: string;
@@ -66,13 +61,11 @@ export const AdminDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const { isAdmin } = useAuth();
-
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && profile?.user_type === 'admin') {
       fetchData();
     }
-  }, [user, isAdmin]);
+  }, [user, profile]);
 
   const fetchData = async () => {
     try {
@@ -184,35 +177,14 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const approveMaterial = async (materialId: string, approved: boolean, reason?: string) => {
+  const approveMaterial = async (materialId: string, approved: boolean) => {
     try {
-      const updateData: any = {
-        approval_status: approved ? 'approved' : 'rejected',
-        approved_by: user?.id,
-        approved_at: new Date().toISOString()
-      };
-
-      if (!approved && reason) {
-        updateData.rejection_reason = reason;
-      }
-
       const { error } = await supabase
         .from('materials')
-        .update(updateData)
+        .update({ is_approved: approved })
         .eq('id', materialId);
 
       if (error) throw error;
-
-      // Log admin action
-      await supabase
-        .from('admin_audit_log')
-        .insert({
-          admin_id: user?.id,
-          action: approved ? 'approve_material' : 'reject_material',
-          target_table: 'materials',
-          target_id: materialId,
-          reason: reason || null
-        });
 
       toast({
         title: approved ? "Material approved" : "Material rejected",
@@ -231,7 +203,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // Check if user is admin
-  if (!isAdmin) {
+  if (!profile || profile.user_type !== 'admin') {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -311,21 +283,18 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Admin Tabs */}
-      <Tabs defaultValue="tutors" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="tutors">Tutor Verification</TabsTrigger>
-          <TabsTrigger value="materials">Material Approval</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="audit">Audit Log</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin Dashboard</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="tutors" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="tutors">Tutor Verification</TabsTrigger>
+              <TabsTrigger value="materials">Material Approval</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="tutors">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tutor Verification</CardTitle>
-            </CardHeader>
-            <CardContent>
-
+            <TabsContent value="tutors">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -402,16 +371,9 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        <TabsContent value="materials">
-          <Card>
-            <CardHeader>
-              <CardTitle>Material Approval</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <TabsContent value="materials">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -446,17 +408,13 @@ export const AdminDashboard: React.FC = () => {
                       </TableCell>
                       <TableCell>{material.download_count}</TableCell>
                       <TableCell>
-                        <Badge variant={
-                          material.approval_status === 'approved' ? "default" : 
-                          material.approval_status === 'rejected' ? "destructive" : 
-                          "secondary"
-                        }>
-                          {material.approval_status || 'pending'}
+                        <Badge variant={material.is_approved ? "default" : "secondary"}>
+                          {material.is_approved ? "Approved" : "Pending"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          {material.approval_status !== 'approved' && (
+                          {!material.is_approved && (
                             <Button
                               size="sm"
                               onClick={() => approveMaterial(material.id, true)}
@@ -473,11 +431,11 @@ export const AdminDashboard: React.FC = () => {
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
-                          {material.approval_status === 'approved' && (
+                          {material.is_approved && (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => approveMaterial(material.id, false, 'Rejected by admin')}
+                              onClick={() => approveMaterial(material.id, false)}
                             >
                               <XCircle className="h-4 w-4 mr-1" />
                               Reject
@@ -489,18 +447,10 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <AnalyticsCharts />
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <AuditLogTable />
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -44,8 +44,8 @@ export const MaterialLibrary: React.FC = () => {
   const [purchases, setPurchases] = useState<MaterialPurchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('all');
-  const [priceFilter, setPriceFilter] = useState('all');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [priceFilter, setPriceFilter] = useState('');
 
   const subjects = [
     'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English',
@@ -71,7 +71,7 @@ export const MaterialLibrary: React.FC = () => {
             profile_image_url
           )
         `)
-        .eq('approval_status', 'approved')
+        .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -183,9 +183,9 @@ export const MaterialLibrary: React.FC = () => {
                          material.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          material.subject.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSubject = !selectedSubject || selectedSubject === 'all' || material.subject === selectedSubject;
+    const matchesSubject = !selectedSubject || material.subject === selectedSubject;
     
-    const matchesPrice = !priceFilter || priceFilter === 'all' ||
+    const matchesPrice = !priceFilter || 
                         (priceFilter === 'free' && material.price === 0) ||
                         (priceFilter === 'paid' && material.price > 0);
 
@@ -244,7 +244,7 @@ export const MaterialLibrary: React.FC = () => {
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All subjects</SelectItem>
+                <SelectItem value="">All subjects</SelectItem>
                 {subjects.map((subject) => (
                   <SelectItem key={subject} value={subject}>
                     {subject}
@@ -258,7 +258,7 @@ export const MaterialLibrary: React.FC = () => {
                 <SelectValue placeholder="All materials" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All materials</SelectItem>
+                <SelectItem value="">All materials</SelectItem>
                 <SelectItem value="free">Free materials</SelectItem>
                 <SelectItem value="paid">Paid materials</SelectItem>
               </SelectContent>
@@ -268,8 +268,8 @@ export const MaterialLibrary: React.FC = () => {
               variant="outline" 
               onClick={() => {
                 setSearchTerm('');
-                setSelectedSubject('all');
-                setPriceFilter('all');
+                setSelectedSubject('');
+                setPriceFilter('');
               }}
             >
               <Filter className="h-4 w-4 mr-2" />
