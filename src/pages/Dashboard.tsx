@@ -11,9 +11,7 @@ import { MessagingSystem } from '@/components/MessagingSystem';
 import { MaterialLibrary } from '@/components/MaterialLibrary';
 import { MaterialUpload } from '@/components/MaterialUpload';
 import { AdminDashboard } from '@/components/AdminDashboard';
-import { Profile } from '@/components/Profile';
 import { toast } from '@/hooks/use-toast';
-import { safeError, logError } from '@/lib/safeError';
 import { format } from 'date-fns';
 import { 
   Calendar, 
@@ -32,7 +30,6 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 
 interface Tutor {
   user_id: string;
@@ -73,8 +70,8 @@ export const Dashboard = () => {
   const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
   const [selectedMessageUserId, setSelectedMessageUserId] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('all');
-  const [rateFilter, setRateFilter] = useState('any');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [rateFilter, setRateFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -89,70 +86,15 @@ export const Dashboard = () => {
     }
   }, [user, profile]);
 
-  // Real-time updates for bookings (student side)
-  useRealtimeUpdates({
-    tableName: 'bookings',
-    filter: user?.id ? `student_id=eq.${user.id}` : undefined,
-    onInsert: (payload) => {
-      console.log('New booking (student):', payload);
-      fetchBookings();
-    },
-    onUpdate: (payload) => {
-      console.log('Booking updated (student):', payload);
-      fetchBookings();
-    }
-  });
-
-  // Real-time updates for bookings (tutor side)
-  useRealtimeUpdates({
-    tableName: 'bookings',
-    filter: user?.id ? `tutor_id=eq.${user.id}` : undefined,
-    onInsert: (payload) => {
-      console.log('New booking (tutor):', payload);
-      fetchBookings();
-    },
-    onUpdate: (payload) => {
-      console.log('Booking updated (tutor):', payload);
-      fetchBookings();
-    }
-  });
-
-  // Real-time updates for messages (as sender)
-  useRealtimeUpdates({
-    tableName: 'messages',
-    filter: user?.id ? `sender_id=eq.${user.id}` : undefined,
-    onInsert: (payload) => {
-      console.log('New message sent:', payload);
-    }
-  });
-
-  // Real-time updates for messages (as receiver)
-  useRealtimeUpdates({
-    tableName: 'messages',
-    filter: user?.id ? `receiver_id=eq.${user.id}` : undefined,
-    onInsert: (payload) => {
-      console.log('New message received:', payload);
-    }
-  });
-
-  // Real-time updates for materials
-  useRealtimeUpdates({
-    tableName: 'materials',
-    onUpdate: (payload) => {
-      console.log('Material updated:', payload);
-      // Could refresh materials if needed
-    }
-  });
-
   const fetchData = async () => {
     try {
       setLoading(true);
       await Promise.all([fetchTutors(), fetchBookings()]);
     } catch (error) {
-      logError(error, 'Dashboard.fetchData');
+      console.error('Error fetching data:', error);
       toast({
         title: "Error",
-        description: safeError(error),
+        description: "Failed to load dashboard data",
         variant: "destructive"
       });
     } finally {
@@ -161,14 +103,13 @@ export const Dashboard = () => {
   };
 
   const fetchTutors = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_type', 'tutor')
-        .not('hourly_rate', 'is', null);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_type', 'tutor')
+      .not('hourly_rate', 'is', null);
 
-      if (error) throw error;
+    if (error) throw error;
     
     // Fetch ratings for each tutor
     const tutorsWithRatings = await Promise.all(
@@ -182,42 +123,33 @@ export const Dashboard = () => {
           review_count: reviewCount || 0
         };
       })
-      );
-      
-      setTutors(tutorsWithRatings);
-    } catch (error) {
-      logError(error, 'Dashboard.fetchTutors');
-      throw error;
-    }
+    );
+    
+    setTutors(tutorsWithRatings);
   };
 
   const fetchBookings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          tutor:profiles!tutor_id(first_name, last_name),
-          student:profiles!student_id(first_name, last_name)
-        `)
-        .or(`student_id.eq.${user.id},tutor_id.eq.${user.id}`)
-        .order('session_date', { ascending: false });
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        tutor:profiles!tutor_id(first_name, last_name),
+        student:profiles!student_id(first_name, last_name)
+      `)
+      .or(`student_id.eq.${user.id},tutor_id.eq.${user.id}`)
+      .order('session_date', { ascending: false });
 
-      if (error) throw error;
-      setBookings(data || []);
-    } catch (error) {
-      logError(error, 'Dashboard.fetchBookings');
-      throw error;
-    }
+    if (error) throw error;
+    setBookings(data || []);
   };
 
   const filteredTutors = tutors.filter(tutor => {
     const matchesSearch = `${tutor.first_name} ${tutor.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tutor.subjects?.some(subject => subject.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesSubject = !selectedSubject || selectedSubject === 'all' || tutor.subjects?.includes(selectedSubject);
+    const matchesSubject = !selectedSubject || tutor.subjects?.includes(selectedSubject);
     
-    const matchesRate = !rateFilter || rateFilter === 'any' ||
+    const matchesRate = !rateFilter || 
                        (rateFilter === 'low' && tutor.hourly_rate <= 30) ||
                        (rateFilter === 'medium' && tutor.hourly_rate > 30 && tutor.hourly_rate <= 60) ||
                        (rateFilter === 'high' && tutor.hourly_rate > 60);
@@ -285,7 +217,7 @@ export const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue={profile?.user_type === 'tutor' ? 'my-bookings' : 'find-tutors'} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
             {profile?.user_type === 'student' && (
               <TabsTrigger value="find-tutors" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
@@ -310,10 +242,6 @@ export const Dashboard = () => {
                 Upload
               </TabsTrigger>
             )}
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
             {profile?.user_type === 'admin' && (
               <TabsTrigger value="admin" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
@@ -350,7 +278,7 @@ export const Dashboard = () => {
                         <SelectValue placeholder="Subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All subjects</SelectItem>
+                        <SelectItem value="">All subjects</SelectItem>
                         {subjects.map((subject) => (
                           <SelectItem key={subject} value={subject}>
                             {subject}
@@ -364,7 +292,7 @@ export const Dashboard = () => {
                         <SelectValue placeholder="Hourly rate" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="any">Any rate</SelectItem>
+                        <SelectItem value="">Any rate</SelectItem>
                         <SelectItem value="low">$0-30/hr</SelectItem>
                         <SelectItem value="medium">$30-60/hr</SelectItem>
                         <SelectItem value="high">$60+/hr</SelectItem>
@@ -383,8 +311,8 @@ export const Dashboard = () => {
                     className="mt-4"
                     onClick={() => {
                       setSearchTerm('');
-                      setSelectedSubject('all');
-                      setRateFilter('any');
+                      setSelectedSubject('');
+                      setRateFilter('');
                       setLocationFilter('');
                     }}
                   >
@@ -574,11 +502,6 @@ export const Dashboard = () => {
               }} />
             </TabsContent>
           )}
-
-          {/* Profile Tab */}
-          <TabsContent value="profile">
-            <Profile />
-          </TabsContent>
 
           {/* Admin Dashboard */}
           {profile?.user_type === 'admin' && (

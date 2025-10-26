@@ -107,15 +107,14 @@ export const MaterialUpload: React.FC<MaterialUploadProps> = ({ onUploadSuccess 
           file_url: publicUrl,
           file_type: selectedFile.type,
           file_size_mb: Number((selectedFile.size / (1024 * 1024)).toFixed(2)),
-          tutor_id: user.id,
-          approval_status: 'pending'
+          tutor_id: user.id
         });
 
       if (dbError) throw dbError;
 
       toast({
         title: "Material uploaded successfully",
-        description: "Your material has been submitted for approval"
+        description: "Your material is now available for students"
       });
 
       // Reset form
