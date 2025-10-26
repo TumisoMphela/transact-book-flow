@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,10 @@ const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
+
+const CreateCheckoutSchema = z.object({
+  bookingId: z.string().uuid({ message: 'Invalid booking ID format' }),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -41,8 +46,24 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { bookingId } = await req.json();
-    if (!bookingId) throw new Error("Booking ID is required");
+    const body = await req.json();
+    const validation = CreateCheckoutSchema.safeParse(body);
+    
+    if (!validation.success) {
+      logStep("Validation error", validation.error.issues);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid input", 
+          details: validation.error.issues 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    const { bookingId } = validation.data;
 
     // Fetch booking details
     const { data: booking, error: bookingError } = await supabaseClient
