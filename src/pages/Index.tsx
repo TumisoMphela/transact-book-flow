@@ -31,7 +31,7 @@ const Index = () => {
             <BookOpen className="h-8 w-8 text-education-foreground" />
           </div>
           <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-            TutorConnect
+            OUTLOOK Tutoring
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Connect with expert tutors, book sessions, and achieve your learning goals. 
