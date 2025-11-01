@@ -657,6 +657,78 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          approval_status: string | null
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_approved: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          approval_status?: string | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_approved?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          approval_status?: string | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_approved?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tutor_demos: {
+        Row: {
+          approval_status: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_approved: boolean | null
+          title: string
+          tutor_id: string
+          updated_at: string | null
+          video_file_path: string | null
+          video_url: string | null
+        }
+        Insert: {
+          approval_status?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_approved?: boolean | null
+          title: string
+          tutor_id: string
+          updated_at?: string | null
+          video_file_path?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          approval_status?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_approved?: boolean | null
+          title?: string
+          tutor_id?: string
+          updated_at?: string | null
+          video_file_path?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

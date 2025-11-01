@@ -1,5 +1,5 @@
 // src/pages/BecomeTutor.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,16 +48,27 @@ export const BecomeTutor: React.FC = () => {
     setLoading(true);
 
     try {
-      // Update profile with tutor role
+      // First, add tutor role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: user?.id,
+          role: 'tutor'
+        });
+
+      if (roleError && !roleError.message.includes('duplicate')) {
+        throw roleError;
+      }
+
+      // Then update profile
       const { error } = await supabase
         .from('profiles')
         .update({
-          roles: supabase.sql`array_append(roles, 'tutor')`,
           bio: formData.bio,
           education: formData.education,
           experience_years: formData.experience_years,
           hourly_rate: formData.hourly_rate,
-          subject_ids: subjects.map(s => s)
+          subjects: subjects
         })
         .eq('user_id', user?.id);
 
