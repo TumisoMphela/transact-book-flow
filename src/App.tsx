@@ -13,6 +13,13 @@ import { Tutors } from "./pages/Tutors";
 import { TutorProfile } from "./pages/TutorProfile";
 import { Materials } from "./pages/Materials";
 import { Availability } from "./pages/Availability";
+import { AuthVerify } from "./pages/AuthVerify";
+import { BecomeTutor } from "./pages/BecomeTutor";
+import Academy from "./pages/Academy";
+import CourseDetail from "./pages/CourseDetail";
+import LessonPage from "./pages/LessonPage";
+import StudyGroups from "./pages/StudyGroups";
+import GroupChat from "./pages/GroupChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +34,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/verify" element={<AuthVerify />} />
             <Route path="/tutors" element={<Tutors />} />
             <Route path="/tutors/:id" element={<TutorProfile />} />
             <Route path="/materials" element={<Materials />} />
@@ -43,6 +51,32 @@ const App = () => (
             <Route path="/booking-success" element={
               <ProtectedRoute>
                 <BookingSuccess />
+              </ProtectedRoute>
+            } />
+            <Route path="/become-tutor" element={
+              <ProtectedRoute>
+                <BecomeTutor />
+              </ProtectedRoute>
+            } />
+            <Route path="/academy" element={<Academy />} />
+            <Route path="/academy/:courseId" element={
+              <ProtectedRoute>
+                <CourseDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/academy/lesson/:lessonId" element={
+              <ProtectedRoute>
+                <LessonPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/groups" element={
+              <ProtectedRoute>
+                <StudyGroups />
+              </ProtectedRoute>
+            } />
+            <Route path="/groups/:groupId" element={
+              <ProtectedRoute>
+                <GroupChat />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

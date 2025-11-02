@@ -211,6 +211,212 @@ export type Database = {
         }
         Relationships: []
       }
+      course_lessons: {
+        Row: {
+          content: string | null
+          course_id: string
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          order_index: number
+          title: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          course_id: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          order_index: number
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          course_id?: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          order_index?: number
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          course_id: string
+          id: string
+          lesson_id: string | null
+          quiz_score: number | null
+          started_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          course_id: string
+          id?: string
+          lesson_id?: string | null
+          quiz_score?: number | null
+          started_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          course_id?: string
+          id?: string
+          lesson_id?: string | null
+          quiz_score?: number | null
+          started_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          group_id: string
+          id: string
+          media_type: string | null
+          media_url: string | null
+          sender_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          group_id: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          sender_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          sender_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_quizzes: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          explanation: string | null
+          id: string
+          lesson_id: string
+          options: Json
+          question: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          lesson_id: string
+          options: Json
+          question: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          lesson_id?: string
+          options?: Json
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_quizzes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       material_downloads: {
         Row: {
           downloaded_at: string
@@ -299,10 +505,12 @@ export type Database = {
           file_url: string
           id: string
           is_approved: boolean | null
+          payout_amount: number | null
           price: number | null
           rejection_reason: string | null
           subject: string
           title: string
+          total_earnings: number | null
           tutor_id: string
           updated_at: string
         }
@@ -318,10 +526,12 @@ export type Database = {
           file_url: string
           id?: string
           is_approved?: boolean | null
+          payout_amount?: number | null
           price?: number | null
           rejection_reason?: string | null
           subject: string
           title: string
+          total_earnings?: number | null
           tutor_id: string
           updated_at?: string
         }
@@ -337,10 +547,12 @@ export type Database = {
           file_url?: string
           id?: string
           is_approved?: boolean | null
+          payout_amount?: number | null
           price?: number | null
           rejection_reason?: string | null
           subject?: string
           title?: string
+          total_earnings?: number | null
           tutor_id?: string
           updated_at?: string
         }
@@ -450,6 +662,8 @@ export type Database = {
       profiles: {
         Row: {
           bio: string | null
+          certificates: Json | null
+          completed_courses: number | null
           created_at: string
           education: string | null
           email: string | null
@@ -464,14 +678,18 @@ export type Database = {
           phone: string | null
           profile_image_url: string | null
           qualifications: string[] | null
+          stripe_account_id: string | null
           subject_interests: string[] | null
           subjects: string[] | null
+          tutor_level: string | null
           updated_at: string
           user_id: string
           user_type: string
         }
         Insert: {
           bio?: string | null
+          certificates?: Json | null
+          completed_courses?: number | null
           created_at?: string
           education?: string | null
           email?: string | null
@@ -486,14 +704,18 @@ export type Database = {
           phone?: string | null
           profile_image_url?: string | null
           qualifications?: string[] | null
+          stripe_account_id?: string | null
           subject_interests?: string[] | null
           subjects?: string[] | null
+          tutor_level?: string | null
           updated_at?: string
           user_id: string
           user_type: string
         }
         Update: {
           bio?: string | null
+          certificates?: Json | null
+          completed_courses?: number | null
           created_at?: string
           education?: string | null
           email?: string | null
@@ -508,8 +730,10 @@ export type Database = {
           phone?: string | null
           profile_image_url?: string | null
           qualifications?: string[] | null
+          stripe_account_id?: string | null
           subject_interests?: string[] | null
           subjects?: string[] | null
+          tutor_level?: string | null
           updated_at?: string
           user_id?: string
           user_type?: string
@@ -657,6 +881,42 @@ export type Database = {
         }
         Relationships: []
       }
+      study_groups: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          member_limit: number | null
+          name: string
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          member_limit?: number | null
+          name: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          member_limit?: number | null
+          name?: string
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           approval_status: string | null
@@ -686,6 +946,42 @@ export type Database = {
           id?: string
           is_approved?: boolean | null
           name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tutor_courses: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          difficulty: string | null
+          duration_hours: number | null
+          id: string
+          is_published: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_published?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_published?: boolean | null
+          title?: string
           updated_at?: string | null
         }
         Relationships: []

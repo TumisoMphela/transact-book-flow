@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useAuth } from '@/components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Users, Star, Calendar, GraduationCap } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { BookOpen, Users, Star, Calendar, GraduationCap, Award, MessageCircle, TrendingUp } from 'lucide-react';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -38,6 +39,8 @@ const Index = () => {
           <nav className="hidden md:flex gap-6">
             <Button variant="ghost" onClick={() => navigate('/tutors')}>Find Tutors</Button>
             <Button variant="ghost" onClick={() => navigate('/materials')}>Materials</Button>
+            <Button variant="ghost" onClick={() => navigate('/academy')}>Academy</Button>
+            <Button variant="ghost" onClick={() => navigate('/groups')}>Study Groups</Button>
             {user ? (
               <Button onClick={() => navigate('/dashboard')}>Dashboard</Button>
             ) : (
@@ -91,28 +94,83 @@ const Index = () => {
           </div>
 
           {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-8 mt-16">
-            <div className="text-center p-8 rounded-xl bg-card shadow-card hover:shadow-elevated transition-shadow">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Expert Tutors</h3>
-              <p className="text-muted-foreground">Connect with qualified tutors across all subjects and skill levels</p>
-            </div>
-            <div className="text-center p-8 rounded-xl bg-card shadow-card hover:shadow-elevated transition-shadow">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Easy Booking</h3>
-              <p className="text-muted-foreground">Schedule sessions seamlessly with our integrated calendar system</p>
-            </div>
-            <div className="text-center p-8 rounded-xl bg-card shadow-card hover:shadow-elevated transition-shadow">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Secure Payments</h3>
-              <p className="text-muted-foreground">Safe and secure payment processing powered by Stripe</p>
-            </div>
+          <div className="grid md:grid-cols-4 gap-8 mt-16">
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6">
+                <Award className="w-12 h-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-semibold text-lg mb-2">Certified Tutors</h3>
+                <p className="text-muted-foreground text-sm">
+                  Trained through OutLook Tutor Academy
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6">
+                <Calendar className="w-12 h-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-semibold text-lg mb-2">Easy Booking</h3>
+                <p className="text-muted-foreground text-sm">
+                  Schedule sessions at your convenience
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6">
+                <MessageCircle className="w-12 h-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-semibold text-lg mb-2">Study Groups</h3>
+                <p className="text-muted-foreground text-sm">
+                  Join collaborative learning communities
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="text-center hover:shadow-lg transition-shadow">
+              <CardContent className="pt-6">
+                <TrendingUp className="w-12 h-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-semibold text-lg mb-2">Upload & Earn</h3>
+                <p className="text-muted-foreground text-sm">
+                  Share materials and earn 90%
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* New Features Highlight */}
+          <div className="grid md:grid-cols-3 gap-8 mt-20">
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-6">
+                <Award className="w-10 h-10 mb-4 text-primary" />
+                <h3 className="font-bold text-xl mb-2">Tutor Academy</h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Complete training courses to become a certified tutor and earn badges
+                </p>
+                <Button onClick={() => navigate('/academy')} variant="outline" className="w-full">
+                  Start Training
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-6">
+                <Users className="w-10 h-10 mb-4 text-primary" />
+                <h3 className="font-bold text-xl mb-2">Study Groups</h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Join WhatsApp-style groups for collaborative learning and peer support
+                </p>
+                <Button onClick={() => navigate('/groups')} variant="outline" className="w-full">
+                  Join a Group
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-6">
+                <BookOpen className="w-10 h-10 mb-4 text-primary" />
+                <h3 className="font-bold text-xl mb-2">Upload & Earn</h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Share your study materials and earn 90% from every purchase
+                </p>
+                <Button onClick={() => navigate('/materials')} variant="outline" className="w-full">
+                  Browse Materials
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
