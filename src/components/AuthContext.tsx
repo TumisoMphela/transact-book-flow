@@ -35,21 +35,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate(); // ← Added
 
   const fetchProfile = async (userId: string) => {
-    // ... your existing fetchProfile code
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+      setProfile(profileData);
+
+      // Fetch roles after profile
+      await fetchRoles(userId);
+    } catch (error) {
+      console.error('[AUTH] Error fetching profile:', error);
+      setProfile(null);
+    }
   };
 
   const fetchRoles = async (userId: string) => {
-    // ... your existing fetchRoles code
+    try {
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (rolesError) throw rolesError;
+      setRoles(rolesData?.map((r: any) => r.role) || []);
+    } catch (error) {
+      console.error('[AUTH] Error fetching roles:', error);
+      setRoles([]);
+    }
   };
 
   const refreshProfile = async () => {
-    // ... your existing refreshProfile code
+    if (user) {
+      await fetchProfile(user.id);
+    }
   };
 
   useEffect(() => {
     let mounted = true;
     
-    // ✅ ENHANCED: With email verification
+    // ✅ ENHANCED: With email verification and error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -86,15 +114,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check for existing session with error handling
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted) return;
+      
+      // If there's an auth error (e.g., invalid refresh token), clear the session
+      if (error) {
+        console.error('[AUTH] Session error:', error.message);
+        supabase.auth.signOut(); // Clear invalid session
+        setUser(null);
+        setProfile(null);
+        setRoles([]);
+        setLoading(false);
+        return;
+      }
       
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
       }
       setLoading(false);
+    }).catch((err) => {
+      // Handle any unexpected errors during session retrieval
+      console.error('[AUTH] Unexpected error:', err);
+      if (mounted) {
+        setUser(null);
+        setProfile(null);
+        setRoles([]);
+        setLoading(false);
+      }
     });
 
     // Fallback timeout
