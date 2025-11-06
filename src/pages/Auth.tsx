@@ -45,23 +45,18 @@ export const Auth = () => {
 
       console.log('[AUTH] Sign in successful. Email confirmed:', !!data.user?.email_confirmed_at);
 
-      // Check if email is confirmed
-      if (data.user && !data.user.email_confirmed_at) {
-        console.warn('[AUTH] Email not verified for:', formData.email);
-        
-        // Sign out the unverified user
-        await supabase.auth.signOut();
-        
-        // Redirect to verification page
-        navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
-        
-        toast({
-          title: "Email Verification Required",
-          description: "Please verify your email address before signing in. Check your inbox or click 'Resend Email' below.",
-          variant: "destructive"
-        });
-        return;
-      }
+      // Skip email confirmation check for easier testing
+      // To re-enable: Go to Supabase Dashboard → Authentication → Settings → "Enable email confirmations"
+      // if (data.user && !data.user.email_confirmed_at) {
+      //   await supabase.auth.signOut();
+      //   navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
+      //   toast({
+      //     title: "Email Verification Required",
+      //     description: "Please verify your email before signing in.",
+      //     variant: "destructive"
+      //   });
+      //   return;
+      // }
       
       console.log('[AUTH] User authenticated successfully');
       toast({
@@ -103,20 +98,23 @@ export const Auth = () => {
       }
 
       console.log('[AUTH] Sign up successful. User ID:', data.user?.id);
-      console.log('[AUTH] Email confirmation required:', !data.user?.email_confirmed_at);
 
-      // Redirect to verification page
-      navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
-      
       toast({
         title: "Account Created!",
-        description: "Please check your email (including spam folder) to verify your account before signing in.",
+        description: "You can now sign in with your credentials.",
       });
 
-      // Dev mode fallback: if this is a development/test environment and SMTP might not be configured
-      if (import.meta.env.DEV && formData.email.includes('@gmail.com')) {
-        console.warn('[AUTH] DEV MODE: If you do not receive an email within 2 minutes, SMTP may not be configured. Check Supabase Dashboard → Authentication → SMTP Settings');
+      // Auto sign in after successful signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (signInError) {
+        console.error('[AUTH] Auto sign-in failed:', signInError);
+        navigate('/auth'); // Redirect to login
       }
+      // AuthContext will handle navigation to dashboard
     } catch (error: any) {
       handleAuthError(error);
     } finally {
@@ -130,11 +128,7 @@ export const Auth = () => {
     let title = "Authentication Failed";
     let description = error.message;
 
-    if (error.message?.includes("email not confirmed") || error.message?.includes("Email not confirmed")) {
-      title = "Email Verification Required";
-      description = "Please verify your email address before signing in. Check your inbox for the verification link.";
-      navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
-    } else if (error.message?.includes("Invalid login credentials")) {
+    if (error.message?.includes("Invalid login credentials")) {
       title = "Invalid Credentials";
       description = "Please check your email and password.";
     } else if (error.message?.includes("Email rate limit exceeded")) {
