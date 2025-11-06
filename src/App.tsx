@@ -20,6 +20,7 @@ import CourseDetail from "./pages/CourseDetail";
 import LessonPage from "./pages/LessonPage";
 import StudyGroups from "./pages/StudyGroups";
 import GroupChat from "./pages/GroupChat";
+import ProfileSettings from "./pages/ProfileSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,11 @@ const App = () => (
             <Route path="/groups/:groupId" element={
               <ProtectedRoute>
                 <GroupChat />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <ProfileSettings />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
