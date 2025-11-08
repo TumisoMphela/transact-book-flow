@@ -96,6 +96,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, tut
 
       if (bookingError) throw bookingError;
 
+      // Send booking notification email
+      try {
+        await supabase.functions.invoke('send-booking-notification', {
+          body: { bookingId: booking.id, type: 'created' }
+        });
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError);
+        // Don't fail the booking if email fails
+      }
+
       toast({
         title: "Booking Created",
         description: "Proceeding to payment...",

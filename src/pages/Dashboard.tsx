@@ -29,10 +29,13 @@ import {
   Upload,
   Settings,
   MapPin,
-  CheckCircle
+  CheckCircle,
+  LogOut
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
+import { NotificationCenter } from '@/components/NotificationCenter';
+import { ReviewModal } from '@/components/ReviewModal';
 
 interface Tutor {
   user_id: string;
@@ -51,6 +54,8 @@ interface Tutor {
 
 interface Booking {
   id: string;
+  tutor_id: string;
+  student_id: string;
   session_date: string;
   duration_hours: number;
   subject: string;
@@ -77,6 +82,12 @@ export const Dashboard = () => {
   const [rateFilter, setRateFilter] = useState('any');
   const [locationFilter, setLocationFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<{
+    bookingId: string;
+    tutorId: string;
+    tutorName: string;
+  } | null>(null);
 
   const subjects = [
     'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English',
@@ -303,6 +314,7 @@ export const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationCenter />
             <Badge variant="outline" className="capitalize">
               {profile?.user_type}
               {profile?.is_verified && profile?.user_type === 'tutor' && (
@@ -310,6 +322,7 @@ export const Dashboard = () => {
               )}
             </Badge>
             <Button variant="outline" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
           </div>
@@ -529,7 +542,7 @@ export const Dashboard = () => {
               {bookings.map((booking) => (
                 <Card key={booking.id}>
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
+                     <div className="flex items-start justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
                           <h3 className="font-semibold text-lg">{booking.subject}</h3>
@@ -557,11 +570,30 @@ export const Dashboard = () => {
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <div className="text-lg font-bold">${booking.total_amount}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {booking.duration_hours} hour{booking.duration_hours !== 1 ? 's' : ''}
+                      <div className="text-right space-y-2">
+                        <div>
+                          <div className="text-lg font-bold">${booking.total_amount}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {booking.duration_hours} hour{booking.duration_hours !== 1 ? 's' : ''}
+                          </div>
                         </div>
+                        {profile?.user_type === 'student' && booking.status === 'completed' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedBookingForReview({
+                                bookingId: booking.id,
+                                tutorId: booking.tutor_id,
+                                tutorName: `${booking.tutor.first_name} ${booking.tutor.last_name}`,
+                              });
+                              setReviewModalOpen(true);
+                            }}
+                          >
+                            <Star className="h-4 w-4 mr-1" />
+                            Leave Review
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -628,6 +660,23 @@ export const Dashboard = () => {
           isOpen={!!selectedTutor}
           onClose={() => setSelectedTutor(null)}
           tutor={selectedTutor}
+        />
+      )}
+
+      {/* Review Modal */}
+      {selectedBookingForReview && (
+        <ReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => {
+            setReviewModalOpen(false);
+            setSelectedBookingForReview(null);
+          }}
+          bookingId={selectedBookingForReview.bookingId}
+          tutorId={selectedBookingForReview.tutorId}
+          tutorName={selectedBookingForReview.tutorName}
+          onReviewSubmitted={() => {
+            fetchBookings();
+          }}
         />
       )}
     </div>

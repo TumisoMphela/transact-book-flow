@@ -239,16 +239,28 @@ export const MessagingSystem: React.FC<MessagingSystemProps> = ({ selectedUserId
         ? conversation.participant_2 
         : conversation.participant_1;
 
-      const { error } = await supabase
+      const { data: messageData, error } = await supabase
         .from('messages')
         .insert({
           content: newMessage.trim(),
           sender_id: user.id,
           receiver_id: receiverId,
           conversation_id: selectedConversation
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Send email notification
+      try {
+        await supabase.functions.invoke('send-message-notification', {
+          body: { messageId: messageData.id }
+        });
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError);
+        // Don't fail the message if email fails
+      }
 
       // Update conversation last_message_at
       await supabase
