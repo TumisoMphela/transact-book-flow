@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Upload, Camera } from 'lucide-react';
 import { z } from 'zod';
 
 const profileSchema = z.object({
@@ -29,6 +30,8 @@ export default function ProfileSettings() {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<ProfileFormData>({
     first_name: '',
     last_name: '',
@@ -39,6 +42,7 @@ export default function ProfileSettings() {
     education: '',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   // Notification preferences
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -56,6 +60,7 @@ export default function ProfileSettings() {
         bio: profile.bio || '',
         education: profile.education || '',
       });
+      setProfileImageUrl(profile.profile_image_url || null);
     }
   }, [profile, user]);
 
@@ -125,6 +130,79 @@ export default function ProfileSettings() {
     }
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please select an image file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Image must be less than 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      // Upload to Supabase storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+      const filePath = `profile-pictures/${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('materials')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('materials')
+        .getPublicUrl(filePath);
+
+      // Update profile with new image URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ profile_image_url: publicUrl })
+        .eq('user_id', user?.id);
+
+      if (updateError) throw updateError;
+
+      setProfileImageUrl(publicUrl);
+      await refreshProfile();
+
+      toast({
+        title: 'Profile Picture Updated',
+        description: 'Your profile picture has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Upload Failed',
+        description: 'Failed to upload profile picture. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSavePreferences = async () => {
     // Note: This would typically save to a preferences table
     // For now, we'll just show a success message
@@ -163,6 +241,46 @@ export default function ProfileSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Profile Picture Upload */}
+                <div className="flex flex-col items-center gap-4 pb-6 border-b">
+                  <Avatar className="h-32 w-32">
+                    <AvatarImage src={profileImageUrl || undefined} alt="Profile" />
+                    <AvatarFallback className="text-2xl">
+                      {formData.first_name?.[0]}{formData.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-4 h-4 mr-2" />
+                          Change Picture
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    JPG, PNG or GIF. Max size 5MB.
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="first_name">First Name *</Label>

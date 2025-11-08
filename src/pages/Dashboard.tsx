@@ -96,10 +96,27 @@ export const Dashboard = () => {
     onInsert: (payload) => {
       console.log('New booking (student):', payload);
       fetchBookings();
+      toast({
+        title: "New Booking Created",
+        description: "Your booking has been confirmed!",
+      });
     },
     onUpdate: (payload) => {
       console.log('Booking updated (student):', payload);
       fetchBookings();
+      const status = payload.new?.status;
+      if (status === 'confirmed') {
+        toast({
+          title: "Booking Confirmed",
+          description: "Your tutor has confirmed the session!",
+        });
+      } else if (status === 'cancelled') {
+        toast({
+          title: "Booking Cancelled",
+          description: "Your booking has been cancelled.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -110,10 +127,22 @@ export const Dashboard = () => {
     onInsert: (payload) => {
       console.log('New booking (tutor):', payload);
       fetchBookings();
+      toast({
+        title: "New Booking Request",
+        description: "You have a new booking request from a student!",
+      });
     },
     onUpdate: (payload) => {
       console.log('Booking updated (tutor):', payload);
       fetchBookings();
+      const status = payload.new?.status;
+      if (status === 'cancelled') {
+        toast({
+          title: "Booking Cancelled",
+          description: "A student cancelled their booking.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -132,6 +161,10 @@ export const Dashboard = () => {
     filter: user?.id ? `receiver_id=eq.${user.id}` : undefined,
     onInsert: (payload) => {
       console.log('New message received:', payload);
+      toast({
+        title: "New Message",
+        description: "You have received a new message!",
+      });
     }
   });
 
