@@ -187,6 +187,30 @@ export type Database = {
           },
         ]
       }
+      connect_accounts: {
+        Row: {
+          account_id: string | null
+          created_at: string | null
+          onboarding_complete: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string | null
+          onboarding_complete?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string | null
+          onboarding_complete?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -214,6 +238,7 @@ export type Database = {
       course_lessons: {
         Row: {
           content: string | null
+          content_md: string | null
           course_id: string
           created_at: string | null
           description: string | null
@@ -226,6 +251,7 @@ export type Database = {
         }
         Insert: {
           content?: string | null
+          content_md?: string | null
           course_id: string
           created_at?: string | null
           description?: string | null
@@ -238,6 +264,7 @@ export type Database = {
         }
         Update: {
           content?: string | null
+          content_md?: string | null
           course_id?: string
           created_at?: string | null
           description?: string | null
@@ -305,6 +332,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      earnings: {
+        Row: {
+          created_at: string | null
+          currency: string
+          gross_amount: number
+          id: string
+          is_paid: boolean | null
+          net_amount: number
+          platform_fee: number
+          source: Database["public"]["Enums"]["earning_source"]
+          source_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string
+          gross_amount: number
+          id?: string
+          is_paid?: boolean | null
+          net_amount: number
+          platform_fee: number
+          source: Database["public"]["Enums"]["earning_source"]
+          source_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string
+          gross_amount?: number
+          id?: string
+          is_paid?: boolean | null
+          net_amount?: number
+          platform_fee?: number
+          source?: Database["public"]["Enums"]["earning_source"]
+          source_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       group_members: {
         Row: {
@@ -513,6 +579,8 @@ export type Database = {
           total_earnings: number | null
           tutor_id: string
           updated_at: string
+          uploader_id: string | null
+          uploader_role: string | null
         }
         Insert: {
           approval_status?: string | null
@@ -534,6 +602,8 @@ export type Database = {
           total_earnings?: number | null
           tutor_id: string
           updated_at?: string
+          uploader_id?: string | null
+          uploader_role?: string | null
         }
         Update: {
           approval_status?: string | null
@@ -555,6 +625,8 @@ export type Database = {
           total_earnings?: number | null
           tutor_id?: string
           updated_at?: string
+          uploader_id?: string | null
+          uploader_role?: string | null
         }
         Relationships: [
           {
@@ -587,6 +659,7 @@ export type Database = {
           created_at: string
           id: string
           is_read: boolean
+          media_path: string | null
           receiver_id: string
           sender_id: string
           updated_at: string
@@ -597,6 +670,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
+          media_path?: string | null
           receiver_id: string
           sender_id: string
           updated_at?: string
@@ -607,6 +681,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_read?: boolean
+          media_path?: string | null
           receiver_id?: string
           sender_id?: string
           updated_at?: string
@@ -995,6 +1070,7 @@ export type Database = {
           duration_hours: number | null
           id: string
           is_published: boolean | null
+          thumbnail_url: string | null
           title: string
           updated_at: string | null
         }
@@ -1006,6 +1082,7 @@ export type Database = {
           duration_hours?: number | null
           id?: string
           is_published?: boolean | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string | null
         }
@@ -1017,6 +1094,7 @@ export type Database = {
           duration_hours?: number | null
           id?: string
           is_published?: boolean | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -1164,6 +1242,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_demo: {
+        Args: { _approve: boolean; _id: string }
+        Returns: undefined
+      }
       get_bookings_daily: {
         Args: never
         Returns: {
@@ -1223,6 +1305,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "tutor" | "student"
+      earning_source: "material" | "booking"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1351,6 +1434,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "tutor", "student"],
+      earning_source: ["material", "booking"],
     },
   },
 } as const

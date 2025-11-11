@@ -21,6 +21,8 @@ import LessonPage from "./pages/LessonPage";
 import StudyGroups from "./pages/StudyGroups";
 import GroupChat from "./pages/GroupChat";
 import ProfileSettings from "./pages/ProfileSettings";
+import Earnings from "./pages/Earnings";
+import AdminDemos from "./pages/AdminDemos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,11 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/earnings" element={
+              <ProtectedRoute>
+                <Earnings />
               </ProtectedRoute>
             } />
             <Route path="/availability" element={
@@ -83,6 +90,11 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute>
                 <ProfileSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/demos" element={
+              <ProtectedRoute>
+                <AdminDemos />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

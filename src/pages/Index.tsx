@@ -93,42 +93,132 @@ const Index = () => {
             </Button>
           </div>
 
-          {/* Features Grid */}
-          <div className="grid md:grid-cols-4 gap-8 mt-16">
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <Award className="w-12 h-12 mx-auto mb-4 text-primary" />
-                <h3 className="font-semibold text-lg mb-2">Certified Tutors</h3>
-                <p className="text-muted-foreground text-sm">
-                  Trained through OutLook Tutor Academy
+          {/* Features Grid - Detailed Feature Sections */}
+          <div className="grid md:grid-cols-2 gap-12 mt-20">
+            {/* Expert Tutors */}
+            <Card className="hover:shadow-xl transition-all">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Star className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-2xl">Expert Tutors</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Connect with verified, highly-rated tutors with years of teaching experience. 
+                  All tutors are certified through our academy and specialize in their subjects.
                 </p>
+                <div className="flex gap-2 mb-4">
+                  <Award className="w-5 h-5 text-primary shrink-0" />
+                  <span className="text-sm">Verified & certified professionals</span>
+                </div>
+                <div className="flex gap-2 mb-4">
+                  <Star className="w-5 h-5 text-primary shrink-0" />
+                  <span className="text-sm">Top-rated with proven track records</span>
+                </div>
+                <div className="flex gap-2">
+                  <GraduationCap className="w-5 h-5 text-primary shrink-0" />
+                  <span className="text-sm">Extensive teaching experience</span>
+                </div>
+                <Button className="w-full mt-6" onClick={() => navigate('/tutors')}>
+                  Browse All Tutors
+                </Button>
               </CardContent>
             </Card>
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <Calendar className="w-12 h-12 mx-auto mb-4 text-primary" />
-                <h3 className="font-semibold text-lg mb-2">Easy Booking</h3>
-                <p className="text-muted-foreground text-sm">
-                  Schedule sessions at your convenience
+
+            {/* Easy Booking */}
+            <Card className="hover:shadow-xl transition-all">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-2xl">Easy Booking</h3>
+                </div>
+                <p className="text-muted-foreground mb-6">
+                  Book sessions in 3 simple steps. View real-time tutor availability 
+                  and schedule at your convenience.
                 </p>
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shrink-0 text-primary-foreground font-bold">1</div>
+                    <div>
+                      <p className="font-semibold">Select Your Tutor</p>
+                      <p className="text-sm text-muted-foreground">Browse verified experts</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shrink-0 text-primary-foreground font-bold">2</div>
+                    <div>
+                      <p className="font-semibold">Pick a Time Slot</p>
+                      <p className="text-sm text-muted-foreground">View real-time availability</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shrink-0 text-primary-foreground font-bold">3</div>
+                    <div>
+                      <p className="font-semibold">Confirm & Pay</p>
+                      <p className="text-sm text-muted-foreground">Secure payment via Stripe</p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <MessageCircle className="w-12 h-12 mx-auto mb-4 text-primary" />
-                <h3 className="font-semibold text-lg mb-2">Study Groups</h3>
-                <p className="text-muted-foreground text-sm">
-                  Join collaborative learning communities
+
+            {/* Secure Payments */}
+            <Card className="hover:shadow-xl transition-all">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Award className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-2xl">Secure Payments</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  All transactions are processed securely through Stripe. 
+                  Your financial data is encrypted and never stored on our servers.
                 </p>
+                <div className="bg-accent/50 p-4 rounded-lg mb-4">
+                  <p className="font-semibold mb-2">Powered by Stripe</p>
+                  <p className="text-sm text-muted-foreground">
+                    Industry-leading payment security with 256-bit SSL encryption and PCI DSS compliance.
+                  </p>
+                </div>
+                <Button variant="outline" className="w-full" onClick={() => navigate('/dashboard/bookings')}>
+                  View Your Bookings
+                </Button>
               </CardContent>
             </Card>
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <TrendingUp className="w-12 h-12 mx-auto mb-4 text-primary" />
-                <h3 className="font-semibold text-lg mb-2">Upload & Earn</h3>
-                <p className="text-muted-foreground text-sm">
-                  Share materials and earn 90%
+
+            {/* Upload Materials */}
+            <Card className="hover:shadow-xl transition-all">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-2xl">Upload Materials</h3>
+                </div>
+                <p className="text-muted-foreground mb-4">
+                  Share your study notes, guides, and resources. Earn 90% from every purchase.
                 </p>
+                <div className="bg-accent/50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold">Your earnings:</span>
+                    <span className="text-2xl font-bold text-primary">90%</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Set your own prices. Get paid directly to your Stripe account.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => navigate('/materials')}>
+                    Browse Materials
+                  </Button>
+                  <Button variant="outline" className="flex-1" onClick={() => navigate('/dashboard/earnings')}>
+                    View Earnings
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
